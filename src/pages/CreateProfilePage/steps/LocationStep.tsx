@@ -7,71 +7,75 @@ import {
   Cell,
   Checkbox,
 } from "@telegram-apps/telegram-ui";
-import { requestLocation, useSignal, initData } from "@telegram-apps/sdk-react";
+import { useSignal, initData } from "@telegram-apps/sdk-react";
 import { useProfile } from "@/context/ProfileContext";
-
-const COUNTRIES = [
-  "Россия",
-  "Украина",
-  "Беларусь",
-  "Казахстан",
-  "Грузия",
-  "Армения",
-  "Азербайджан",
-  "Молдова",
-  "Киргизия",
-  "Таджикистан",
-  "Узбекистан",
-  "Туркменистан",
-  "Литва",
-  "Латвия",
-  "Эстония",
-  "Другая",
-];
+import {
+  COUNTRIES,
+  ESCORT_LOCATION_COUNTRIES,
+  CITIES_BY_COUNTRY,
+} from "@/types/profile";
 
 export function LocationStep() {
   const { state, updateData, completeStep, setStep } = useProfile();
-  const [country, setCountry] = useState(state.data.country || "");
-  const [countriesServed, setCountriesServed] = useState<string[]>(
-    state.data.countriesServed || []
+
+  // Her location (country + city)
+  const [userCountry, setUserCountry] = useState(
+    state.data.location?.country || ""
   );
+  const [userCity, setUserCity] = useState(state.data.location?.city || "");
+
+  // Countries where she serves clients
+  const [clientCountries, setClientCountries] = useState<string[]>(
+    state.data.clientCountries || []
+  );
+
   const initDataState = useSignal(initData.state);
 
-  const isValid = country.length > 0 && countriesServed.length > 0;
+  const isValid =
+    userCountry.length > 0 && userCity.length > 0 && clientCountries.length > 0;
 
-  const handleCountryServedToggle = (selectedCountry: string) => {
-    setCountriesServed((prev) =>
+  const availableCities = userCountry
+    ? CITIES_BY_COUNTRY[userCountry] || []
+    : [];
+
+  const handleClientCountryToggle = (selectedCountry: string) => {
+    setClientCountries((prev) =>
       prev.includes(selectedCountry)
         ? prev.filter((c) => c !== selectedCountry)
         : [...prev, selectedCountry]
     );
   };
 
-  const handleRequestLocation = async () => {
-    try {
-      const location = await requestLocation();
-      console.log("Location received:", location);
-      setCountry("Россия");
-    } catch (error) {
-      console.error("Location request failed:", error);
-    }
+  const handleCountryChange = (country: string) => {
+    setUserCountry(country);
+    // Reset city when country changes
+    setUserCity("");
   };
 
   const handleNext = () => {
     if (isValid) {
-      updateData({ country, countriesServed });
+      updateData({
+        location: { country: userCountry, city: userCity },
+        clientCountries,
+      });
       completeStep(2);
       setStep(3);
     }
   };
 
   const handlePrevious = () => {
-    updateData({ country, countriesServed });
+    updateData({
+      location: { country: userCountry, city: userCity },
+      clientCountries,
+    });
     setStep(1);
   };
 
   const handleSave = () => {
-    updateData({ country, countriesServed });
+    updateData({
+      location: { country: userCountry, city: userCity },
+      clientCountries,
+    });
     if (isValid) {
       completeStep(2);
     }
@@ -79,64 +83,82 @@ export function LocationStep() {
 
   useEffect(() => {
     handleSave();
-  }, [country, countriesServed]);
+  }, [userCountry, userCity, clientCountries]);
 
-  // Try to auto-detect country from Telegram user data
+  // Auto-detect country from Telegram user data
   useEffect(() => {
-    if (initDataState?.user?.language_code && !country) {
+    if (!userCountry && initDataState?.user) {
       const languageToCountry: Record<string, string> = {
         ru: "Россия",
         uk: "Украина",
-        be: "Беларусь",
-        kk: "Казахстан",
         ka: "Грузия",
+        tr: "Турция",
       };
-      const detectedCountry =
-        languageToCountry[initDataState.user.language_code];
-      if (detectedCountry) {
-        setCountry(detectedCountry);
+
+      const detectedCountry = initDataState.user.language_code
+        ? languageToCountry[initDataState.user.language_code]
+        : null;
+
+      if (
+        detectedCountry &&
+        ESCORT_LOCATION_COUNTRIES.includes(detectedCountry)
+      ) {
+        setUserCountry(detectedCountry);
       }
+      // No automatic default - let user choose
     }
-  }, [initDataState]);
+  }, [initDataState, userCountry]);
 
   return (
     <List>
-      <Section header="Местоположение">
+      <Section header="Ваше местоположение">
         <Select
           header="Ваша страна"
-          value={country}
-          onChange={(e) => setCountry(e.target.value)}
+          value={userCountry}
+          onChange={(e) => handleCountryChange(e.target.value)}
         >
-          {COUNTRIES.map((countryOption) => (
-            <option key={countryOption} value={countryOption}>
-              {countryOption}
+          <option value="" disabled>
+            Выберите страну
+          </option>
+          {ESCORT_LOCATION_COUNTRIES.map((country) => (
+            <option key={country} value={country}>
+              {country}
             </option>
           ))}
         </Select>
 
-        <Cell
-          subtitle="Определить автоматически через GPS"
-          onClick={handleRequestLocation}
-          interactiveAnimation="opacity"
-        >
-          📍 Определить местоположение
-        </Cell>
+        {userCountry && (
+          <Select
+            header="Ваш город"
+            value={userCity}
+            onChange={(e) => setUserCity(e.target.value)}
+          >
+            <option value="" disabled>
+              Выберите город
+            </option>
+            {availableCities.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </Select>
+        )}
       </Section>
 
-      <Section header="Страны обслуживания клиентов">
-        {COUNTRIES.filter((c) => c !== "Другая").map((countryOption) => (
+      <Section header="Клиентам из каких стран выша анкета будет видна">
+        {COUNTRIES.map((country) => (
           <Cell
-            key={countryOption}
-            onClick={() => handleCountryServedToggle(countryOption)}
+            key={country}
+            onClick={() => handleClientCountryToggle(country)}
             after={
               <Checkbox
-                checked={countriesServed.includes(countryOption)}
-                onChange={() => handleCountryServedToggle(countryOption)}
+                checked={clientCountries.includes(country)}
+                onChange={() => handleClientCountryToggle(country)}
               />
             }
             interactiveAnimation="opacity"
           >
-            {countryOption}
+            {country}
           </Cell>
         ))}
       </Section>
