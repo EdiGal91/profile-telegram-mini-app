@@ -108,7 +108,18 @@ export function PhotosStep() {
   };
 
   const handleAddPhoto = () => {
-    fileInputRef.current?.click();
+    setDebugInfo((prev) => prev + " | Add photo button clicked");
+    try {
+      if (fileInputRef.current) {
+        setDebugInfo((prev) => prev + " | File input exists, triggering click");
+        fileInputRef.current.click();
+        setDebugInfo((prev) => prev + " | Click triggered");
+      } else {
+        setError("File input reference is null");
+      }
+    } catch (error) {
+      setError(`Error triggering file input: ${error}`);
+    }
   };
 
   const convertPhotosToBase64 = async (
@@ -162,6 +173,31 @@ export function PhotosStep() {
         URL.revokeObjectURL(url);
       });
     };
+  }, []);
+
+  // Add debug listeners to file input
+  useEffect(() => {
+    const fileInput = fileInputRef.current;
+    if (fileInput) {
+      const handleFocus = () =>
+        setDebugInfo((prev) => prev + " | File input focused");
+      const handleClick = () =>
+        setDebugInfo((prev) => prev + " | File input clicked");
+      const handleChange = () =>
+        setDebugInfo((prev) => prev + " | File input change event fired");
+
+      fileInput.addEventListener("focus", handleFocus);
+      fileInput.addEventListener("click", handleClick);
+      fileInput.addEventListener("change", handleChange);
+
+      setDebugInfo((prev) => prev + " | File input event listeners added");
+
+      return () => {
+        fileInput.removeEventListener("focus", handleFocus);
+        fileInput.removeEventListener("click", handleClick);
+        fileInput.removeEventListener("change", handleChange);
+      };
+    }
   }, []);
 
   return (
@@ -242,6 +278,32 @@ export function PhotosStep() {
           onChange={handleFileSelect}
         />
 
+        {/* Visible file input for debugging */}
+        <div
+          style={{
+            padding: "16px",
+            border: "1px dashed var(--tg-theme-hint-color)",
+            margin: "8px",
+            borderRadius: "8px",
+          }}
+        >
+          <Text
+            style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}
+          >
+            🔧 Тест видимого input:
+          </Text>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(e) => {
+              setDebugInfo((prev) => prev + " | Visible input change fired");
+              handleFileSelect(e);
+            }}
+            style={{ width: "100%", padding: "8px" }}
+          />
+        </div>
+
         {photos.length < maxPhotos && (
           <Cell
             onClick={handleAddPhoto}
@@ -267,6 +329,63 @@ export function PhotosStep() {
           interactiveAnimation="opacity"
         >
           🧪 Добавить тестовое фото
+        </Cell>
+
+        <Cell
+          onClick={() => {
+            // Alternative: Try to trigger file input differently
+            setDebugInfo(
+              (prev) => prev + " | Trying alternative file input trigger"
+            );
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = "image/*";
+            input.multiple = true;
+            input.style.display = "none";
+
+            input.onchange = (e) => {
+              setDebugInfo(
+                (prev) => prev + " | Alternative input change fired"
+              );
+              const target = e.target as HTMLInputElement;
+              if (target.files) {
+                handleFileSelect({
+                  target: { files: target.files, value: "" },
+                } as any);
+              }
+            };
+
+            document.body.appendChild(input);
+            input.click();
+            document.body.removeChild(input);
+          }}
+          interactiveAnimation="opacity"
+        >
+          🔄 Альтернативный способ
+        </Cell>
+
+        <Cell
+          onClick={() => {
+            // Check if we can use Telegram's photo sharing
+            const telegram = (window as any).Telegram;
+            if (telegram?.WebApp) {
+              setDebugInfo((prev) => prev + " | Telegram WebApp available");
+              try {
+                // This might work on some Telegram versions
+                telegram.WebApp.requestWriteAccess?.();
+                setDebugInfo((prev) => prev + " | Requested write access");
+              } catch (error) {
+                setDebugInfo(
+                  (prev) => prev + ` | Telegram API error: ${error}`
+                );
+              }
+            } else {
+              setDebugInfo((prev) => prev + " | Telegram WebApp not available");
+            }
+          }}
+          interactiveAnimation="opacity"
+        >
+          📱 Проверить Telegram API
         </Cell>
 
         <div
