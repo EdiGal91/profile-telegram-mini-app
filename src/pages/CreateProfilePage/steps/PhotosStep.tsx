@@ -17,8 +17,7 @@ export function PhotosStep() {
       isObjectURL: false,
     }));
   });
-  const [error, setError] = useState<string>("");
-  const [debugInfo, setDebugInfo] = useState<string>("");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const objectURLsRef = useRef<string[]>([]);
 
@@ -27,64 +26,27 @@ export function PhotosStep() {
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      setError("");
-      setDebugInfo(`File selection started. Current photos: ${photos.length}`);
-
       const files = Array.from(event.target.files || []);
-      setDebugInfo((prev) => prev + ` | Files selected: ${files.length}`);
 
-      if (files.length === 0) {
-        setError("No files selected");
-        return;
-      }
+      if (files.length === 0) return;
 
-      files.forEach((file, index) => {
-        try {
-          setDebugInfo(
-            (prev) =>
-              prev +
-              ` | Processing file ${index + 1}: ${file.name}, type: ${
-                file.type
-              }, size: ${file.size}`
-          );
+      files.forEach((file) => {
+        if (photos.length >= maxPhotos) return;
+        if (!file.type.startsWith("image/")) return;
 
-          if (photos.length >= maxPhotos) {
-            setError(`Maximum ${maxPhotos} photos allowed`);
-            return;
-          }
-
-          if (!file.type.startsWith("image/")) {
-            setError(`File ${file.name} is not an image. Type: ${file.type}`);
-            return;
-          }
-
-          // Create object URL for better mobile compatibility
-          const objectURL = URL.createObjectURL(file);
-          objectURLsRef.current.push(objectURL);
-          setDebugInfo(
-            (prev) =>
-              prev + ` | Object URL created: ${objectURL.substring(0, 50)}...`
-          );
-
-          setPhotos((prev) => {
-            const newPhotos = [
-              ...prev,
-              {
-                url: objectURL,
-                file,
-                isObjectURL: true,
-              },
-            ];
-            setDebugInfo(
-              (current) =>
-                current +
-                ` | Photos array updated, new length: ${newPhotos.length}`
-            );
-            return newPhotos;
-          });
-        } catch (fileError) {
-          setError(`Error processing file ${file.name}: ${fileError}`);
-        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64 = e.target?.result as string;
+          setPhotos((prev) => [
+            ...prev,
+            {
+              url: base64,
+              file,
+              isObjectURL: false,
+            },
+          ]);
+        };
+        reader.readAsDataURL(file);
       });
 
       // Clear the input to allow selecting the same file again
@@ -92,71 +54,44 @@ export function PhotosStep() {
         event.target.value = "";
       }
     } catch (error) {
-      setError(`File selection error: ${error}`);
+      console.error("File selection error:", error);
     }
-  };
-
-  const handleRemovePhoto = (index: number) => {
-    const photoToRemove = photos[index];
-    if (photoToRemove?.isObjectURL) {
-      URL.revokeObjectURL(photoToRemove.url);
-      objectURLsRef.current = objectURLsRef.current.filter(
-        (url) => url !== photoToRemove.url
-      );
-    }
-    setPhotos((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleAddPhoto = () => {
-    setDebugInfo((prev) => prev + " | Add photo button clicked");
-    try {
-      if (fileInputRef.current) {
-        setDebugInfo((prev) => prev + " | File input exists, triggering click");
-        fileInputRef.current.click();
-        setDebugInfo((prev) => prev + " | Click triggered");
-      } else {
-        setError("File input reference is null");
-      }
-    } catch (error) {
-      setError(`Error triggering file input: ${error}`);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
     }
   };
 
-  const convertPhotosToBase64 = async (
-    photoData: PhotoData[]
-  ): Promise<string[]> => {
-    const promises = photoData.map(async (photo) => {
-      if (photo.isObjectURL && photo.file) {
-        // Convert to base64 for storage
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.readAsDataURL(photo.file!);
-        });
+  const removePhoto = (index: number) => {
+    setPhotos((prev) => {
+      const photoToRemove = prev[index];
+      if (photoToRemove.isObjectURL && photoToRemove.url) {
+        URL.revokeObjectURL(photoToRemove.url);
+        objectURLsRef.current = objectURLsRef.current.filter(
+          (url) => url !== photoToRemove.url
+        );
       }
-      return photo.url;
+      return prev.filter((_, i) => i !== index);
     });
-    return Promise.all(promises);
   };
 
-  const handleNext = async () => {
+  const handleNext = () => {
     if (isValid) {
-      const photoUrls = await convertPhotosToBase64(photos);
-      updateData({ photos: photoUrls });
+      updateData({ photos: photos.map((p) => p.url) });
       completeStep(4);
       setStep(5);
     }
   };
 
-  const handlePrevious = async () => {
-    const photoUrls = await convertPhotosToBase64(photos);
-    updateData({ photos: photoUrls });
+  const handlePrevious = () => {
+    updateData({ photos: photos.map((p) => p.url) });
     setStep(3);
   };
 
-  const handleSave = async () => {
-    const photoUrls = await convertPhotosToBase64(photos);
-    updateData({ photos: photoUrls });
+  const handleSave = () => {
+    updateData({ photos: photos.map((p) => p.url) });
     if (isValid) {
       completeStep(4);
     }
@@ -166,7 +101,7 @@ export function PhotosStep() {
     handleSave();
   }, [photos]);
 
-  // Cleanup object URLs when component unmounts
+  // Cleanup object URLs on unmount
   useEffect(() => {
     return () => {
       objectURLsRef.current.forEach((url) => {
@@ -175,98 +110,12 @@ export function PhotosStep() {
     };
   }, []);
 
-  // Add debug listeners to file input
-  useEffect(() => {
-    const fileInput = fileInputRef.current;
-    if (fileInput) {
-      const handleFocus = () =>
-        setDebugInfo((prev) => prev + " | File input focused");
-      const handleClick = () =>
-        setDebugInfo((prev) => prev + " | File input clicked");
-      const handleChange = () =>
-        setDebugInfo((prev) => prev + " | File input change event fired");
-
-      fileInput.addEventListener("focus", handleFocus);
-      fileInput.addEventListener("click", handleClick);
-      fileInput.addEventListener("change", handleChange);
-
-      setDebugInfo((prev) => prev + " | File input event listeners added");
-
-      return () => {
-        fileInput.removeEventListener("focus", handleFocus);
-        fileInput.removeEventListener("click", handleClick);
-        fileInput.removeEventListener("change", handleChange);
-      };
-    }
-  }, []);
-
   return (
     <List>
       <Section header="Фотографии">
-        {error && (
-          <div
-            style={{
-              padding: "16px",
-              background: "var(--tg-theme-destructive-text-color)",
-              color: "white",
-              margin: "8px",
-              borderRadius: "8px",
-              fontSize: "14px",
-            }}
-          >
-            ❌ Ошибка: {error}
-          </div>
-        )}
-
-        {debugInfo && (
-          <div
-            style={{
-              padding: "16px",
-              background: "var(--tg-theme-section-bg-color)",
-              color: "var(--tg-theme-text-color)",
-              margin: "8px",
-              borderRadius: "8px",
-              fontSize: "12px",
-              wordBreak: "break-all",
-            }}
-          >
-            🐛 Debug: {debugInfo}
-          </div>
-        )}
-
-        <div
-          style={{
-            padding: "16px",
-            background: "var(--tg-theme-hint-color)",
-            color: "var(--tg-theme-bg-color)",
-            margin: "8px",
-            borderRadius: "8px",
-            fontSize: "14px",
-          }}
-        >
-          📊 Текущее состояние: {photos.length} фото из {maxPhotos}
-          <br />
-          🔧 Valid: {isValid ? "✅" : "❌"} | Object URLs:{" "}
-          {objectURLsRef.current.length}
-          <br />
-          {(debugInfo || error) && (
-            <Button
-              size="s"
-              style={{ marginTop: "8px" }}
-              onClick={() => {
-                setDebugInfo("");
-                setError("");
-              }}
-            >
-              Очистить лог
-            </Button>
-          )}
-        </div>
-
         <Text style={{ padding: "16px", opacity: 0.7 }}>
           Добавьте от 1 до {maxPhotos} фотографий. Первая фотография будет
-          основной. Если фото не отображаются в мобильном приложении, они всё
-          равно сохранены.
+          основной.
         </Text>
 
         <input
@@ -278,142 +127,11 @@ export function PhotosStep() {
           onChange={handleFileSelect}
         />
 
-        {/* Visible file input for debugging */}
-        <div
-          style={{
-            padding: "16px",
-            border: "1px dashed var(--tg-theme-hint-color)",
-            margin: "8px",
-            borderRadius: "8px",
-          }}
-        >
-          <Text
-            style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}
-          >
-            🔧 Тест видимого input:
-          </Text>
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={(e) => {
-              setDebugInfo((prev) => prev + " | Visible input change fired");
-              handleFileSelect(e);
-            }}
-            style={{ width: "100%", padding: "8px" }}
-          />
-        </div>
-
         {photos.length < maxPhotos && (
-          <Cell
-            onClick={handleAddPhoto}
-            interactiveAnimation="opacity"
-            subtitle={`Добавлено: ${photos.length}/${maxPhotos}`}
-          >
-            📷 Добавить фотографии
+          <Cell onClick={handleAddPhoto} interactiveAnimation="opacity">
+            📷 Добавить фото
           </Cell>
         )}
-
-        <Cell
-          onClick={() => {
-            // Test: Add a fake photo to see if display works
-            setPhotos((prev) => [
-              ...prev,
-              {
-                url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23ff6b6b'/%3E%3Ctext x='50' y='50' text-anchor='middle' dy='0.3em' fill='white'%3EТест%3C/text%3E%3C/svg%3E",
-                isObjectURL: false,
-              },
-            ]);
-            setDebugInfo((prev) => prev + " | Test photo added");
-          }}
-          interactiveAnimation="opacity"
-        >
-          🧪 Добавить тестовое фото
-        </Cell>
-
-        <Cell
-          onClick={() => {
-            // Alternative: Try to trigger file input differently
-            setDebugInfo(
-              (prev) => prev + " | Trying alternative file input trigger"
-            );
-            const input = document.createElement("input");
-            input.type = "file";
-            input.accept = "image/*";
-            input.multiple = true;
-            input.style.display = "none";
-
-            input.onchange = (e) => {
-              setDebugInfo(
-                (prev) => prev + " | Alternative input change fired"
-              );
-              const target = e.target as HTMLInputElement;
-              if (target.files) {
-                handleFileSelect({
-                  target: { files: target.files, value: "" },
-                } as any);
-              }
-            };
-
-            document.body.appendChild(input);
-            input.click();
-            document.body.removeChild(input);
-          }}
-          interactiveAnimation="opacity"
-        >
-          🔄 Альтернативный способ
-        </Cell>
-
-        <Cell
-          onClick={() => {
-            // Check if we can use Telegram's photo sharing
-            const telegram = (window as any).Telegram;
-            if (telegram?.WebApp) {
-              setDebugInfo((prev) => prev + " | Telegram WebApp available");
-              try {
-                // This might work on some Telegram versions
-                telegram.WebApp.requestWriteAccess?.();
-                setDebugInfo((prev) => prev + " | Requested write access");
-              } catch (error) {
-                setDebugInfo(
-                  (prev) => prev + ` | Telegram API error: ${error}`
-                );
-              }
-            } else {
-              setDebugInfo((prev) => prev + " | Telegram WebApp not available");
-            }
-          }}
-          interactiveAnimation="opacity"
-        >
-          📱 Проверить Telegram API
-        </Cell>
-
-        <Cell
-          onClick={() => {
-            try {
-              // Clear the profile draft from localStorage
-              localStorage.removeItem("profile_draft");
-              localStorage.clear();
-              setDebugInfo((prev) => prev + " | localStorage cleared");
-
-              // Also clear current photos state
-              setPhotos([]);
-
-              // Clear debug info after a moment
-              setTimeout(() => {
-                setDebugInfo("");
-                setError("");
-                // Reload the page to start fresh
-                window.location.reload();
-              }, 1000);
-            } catch (error) {
-              setError(`Error clearing localStorage: ${error}`);
-            }
-          }}
-          interactiveAnimation="opacity"
-        >
-          🗑️ Очистить данные и начать сначала
-        </Cell>
 
         <div
           style={{
@@ -428,20 +146,6 @@ export function PhotosStep() {
               <img
                 src={photo.url}
                 alt={`Photo ${index + 1}`}
-                onError={(e) => {
-                  // Fallback for mobile compatibility issues
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = "none";
-                  const fallback = document.createElement("div");
-                  fallback.style.cssText = `
-                    width: 100%; height: 100px; background: var(--tg-theme-section-bg-color);
-                    display: flex; align-items: center; justify-content: center;
-                    border-radius: 8px; color: var(--tg-theme-hint-color);
-                    font-size: 12px;
-                  `;
-                  fallback.textContent = "📷 Фото";
-                  target.parentNode?.insertBefore(fallback, target);
-                }}
                 style={{
                   width: "100%",
                   height: "100px",
@@ -473,7 +177,7 @@ export function PhotosStep() {
               <Button
                 size="s"
                 mode="outline"
-                onClick={() => handleRemovePhoto(index)}
+                onClick={() => removePhoto(index)}
                 style={{
                   position: "absolute",
                   top: "4px",
