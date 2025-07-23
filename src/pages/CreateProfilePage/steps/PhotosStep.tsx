@@ -34,19 +34,26 @@ export function PhotosStep() {
         if (photos.length >= maxPhotos) return;
         if (!file.type.startsWith("image/")) return;
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const base64 = e.target?.result as string;
-          setPhotos((prev) => [
-            ...prev,
-            {
-              url: base64,
-              file,
-              isObjectURL: false,
-            },
-          ]);
-        };
-        reader.readAsDataURL(file);
+        // const reader = new FileReader();
+        // reader.onload = (e) => {
+        //   const base64 = e.target?.result as string;
+        //   setPhotos((prev) => [
+        //     ...prev,
+        //     {
+        //       url: base64,
+        //       file,
+        //       isObjectURL: false,
+        //     },
+        //   ]);
+        // };
+        // reader.readAsDataURL(file);
+
+        const blobUrl = URL.createObjectURL(file);
+        objectURLsRef.current.push(blobUrl);
+        setPhotos((prev) => [
+          ...prev,
+          { url: blobUrl, file, isObjectURL: true },
+        ]);
       });
 
       // Clear the input to allow selecting the same file again
@@ -90,16 +97,16 @@ export function PhotosStep() {
     setStep(3);
   };
 
-  const handleSave = () => {
-    updateData({ photos: photos.map((p) => p.url) });
-    if (isValid) {
-      completeStep(4);
-    }
-  };
+  // const handleSave = () => {
+  //   updateData({ photos: photos.map((p) => p.url) });
+  //   if (isValid) {
+  //     completeStep(4);
+  //   }
+  // };
 
-  useEffect(() => {
-    handleSave();
-  }, [photos]);
+  // useEffect(() => {
+  //   handleSave();
+  // }, [photos]);
 
   // Cleanup object URLs on unmount
   useEffect(() => {
