@@ -133,6 +133,9 @@ export function PhotosStep() {
           multiple
           style={{ display: "none" }}
           onChange={handleFileSelect}
+          onError={(error) => {
+            alert(error);
+          }}
         />
 
         {photos.length < maxPhotos && (
