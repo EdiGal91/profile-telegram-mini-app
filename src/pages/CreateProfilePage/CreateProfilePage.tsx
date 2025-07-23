@@ -1,3 +1,8 @@
+import { Page } from "@/components/Page.tsx";
 export default function CreateProfilePage() {
-  return <div>CreateProfilePage</div>;
+  return (
+    <Page>
+      <div>CreateProfilePage</div>
+    </Page>
+  );
 }
