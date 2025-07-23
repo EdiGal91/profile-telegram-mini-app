@@ -2,10 +2,23 @@ import { useState, useEffect, useRef } from "react";
 import { Section, Button, List, Cell, Text } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
 
+interface PhotoData {
+  url: string;
+  file?: File;
+  isObjectURL?: boolean;
+}
+
 export function PhotosStep() {
   const { state, updateData, completeStep, setStep } = useProfile();
-  const [photos, setPhotos] = useState<string[]>(state.data.photos || []);
+  const [photos, setPhotos] = useState<PhotoData[]>(() => {
+    // Convert existing base64 URLs to photo data format
+    return (state.data.photos || []).map((url) => ({
+      url,
+      isObjectURL: false,
+    }));
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const objectURLsRef = useRef<string[]>([]);
 
   const isValid = photos.length >= 1;
   const maxPhotos = 10;
@@ -15,17 +28,35 @@ export function PhotosStep() {
 
     files.forEach((file) => {
       if (photos.length < maxPhotos && file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const result = e.target?.result as string;
-          setPhotos((prev) => [...prev, result]);
-        };
-        reader.readAsDataURL(file);
+        // Create object URL for better mobile compatibility
+        const objectURL = URL.createObjectURL(file);
+        objectURLsRef.current.push(objectURL);
+
+        setPhotos((prev) => [
+          ...prev,
+          {
+            url: objectURL,
+            file,
+            isObjectURL: true,
+          },
+        ]);
       }
     });
+
+    // Clear the input to allow selecting the same file again
+    if (event.target) {
+      event.target.value = "";
+    }
   };
 
   const handleRemovePhoto = (index: number) => {
+    const photoToRemove = photos[index];
+    if (photoToRemove?.isObjectURL) {
+      URL.revokeObjectURL(photoToRemove.url);
+      objectURLsRef.current = objectURLsRef.current.filter(
+        (url) => url !== photoToRemove.url
+      );
+    }
     setPhotos((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -33,21 +64,41 @@ export function PhotosStep() {
     fileInputRef.current?.click();
   };
 
-  const handleNext = () => {
+  const convertPhotosToBase64 = async (
+    photoData: PhotoData[]
+  ): Promise<string[]> => {
+    const promises = photoData.map(async (photo) => {
+      if (photo.isObjectURL && photo.file) {
+        // Convert to base64 for storage
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsDataURL(photo.file!);
+        });
+      }
+      return photo.url;
+    });
+    return Promise.all(promises);
+  };
+
+  const handleNext = async () => {
     if (isValid) {
-      updateData({ photos });
+      const photoUrls = await convertPhotosToBase64(photos);
+      updateData({ photos: photoUrls });
       completeStep(4);
       setStep(5);
     }
   };
 
-  const handlePrevious = () => {
-    updateData({ photos });
+  const handlePrevious = async () => {
+    const photoUrls = await convertPhotosToBase64(photos);
+    updateData({ photos: photoUrls });
     setStep(3);
   };
 
-  const handleSave = () => {
-    updateData({ photos });
+  const handleSave = async () => {
+    const photoUrls = await convertPhotosToBase64(photos);
+    updateData({ photos: photoUrls });
     if (isValid) {
       completeStep(4);
     }
@@ -57,18 +108,28 @@ export function PhotosStep() {
     handleSave();
   }, [photos]);
 
+  // Cleanup object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      objectURLsRef.current.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+    };
+  }, []);
+
   return (
     <List>
       <Section header="Фотографии">
         <Text style={{ padding: "16px", opacity: 0.7 }}>
           Добавьте от 1 до {maxPhotos} фотографий. Первая фотография будет
-          основной.
+          основной. Если фото не отображаются в мобильном приложении, они всё
+          равно сохранены.
         </Text>
 
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/jpg,image/png,image/webp"
           multiple
           style={{ display: "none" }}
           onChange={handleFileSelect}
@@ -95,8 +156,22 @@ export function PhotosStep() {
           {photos.map((photo, index) => (
             <div key={index} style={{ position: "relative" }}>
               <img
-                src={photo}
+                src={photo.url}
                 alt={`Photo ${index + 1}`}
+                onError={(e) => {
+                  // Fallback for mobile compatibility issues
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = "none";
+                  const fallback = document.createElement("div");
+                  fallback.style.cssText = `
+                    width: 100%; height: 100px; background: var(--tg-theme-section-bg-color);
+                    display: flex; align-items: center; justify-content: center;
+                    border-radius: 8px; color: var(--tg-theme-hint-color);
+                    font-size: 12px;
+                  `;
+                  fallback.textContent = "📷 Фото";
+                  target.parentNode?.insertBefore(fallback, target);
+                }}
                 style={{
                   width: "100%",
                   height: "100px",
