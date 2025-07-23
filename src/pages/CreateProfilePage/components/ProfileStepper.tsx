@@ -12,9 +12,9 @@ export function ProfileStepper() {
           Шаг {state.currentStep} из {PROFILE_STEPS.length}:{" "}
           {PROFILE_STEPS[state.currentStep - 1]?.title}
         </Text>
-        <Text style={{ marginTop: "4px", opacity: 0.7 }}>
+        {/* <Text style={{ marginTop: "4px", opacity: 0.7 }}>
           {PROFILE_STEPS[state.currentStep - 1]?.description}
-        </Text>
+        </Text> */}
 
         {/* Progress bar */}
         <div
