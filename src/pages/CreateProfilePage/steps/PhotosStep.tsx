@@ -388,6 +388,33 @@ export function PhotosStep() {
           📱 Проверить Telegram API
         </Cell>
 
+        <Cell
+          onClick={() => {
+            try {
+              // Clear the profile draft from localStorage
+              localStorage.removeItem("profile_draft");
+              localStorage.clear();
+              setDebugInfo((prev) => prev + " | localStorage cleared");
+
+              // Also clear current photos state
+              setPhotos([]);
+
+              // Clear debug info after a moment
+              setTimeout(() => {
+                setDebugInfo("");
+                setError("");
+                // Reload the page to start fresh
+                window.location.reload();
+              }, 1000);
+            } catch (error) {
+              setError(`Error clearing localStorage: ${error}`);
+            }
+          }}
+          interactiveAnimation="opacity"
+        >
+          🗑️ Очистить данные и начать сначала
+        </Cell>
+
         <div
           style={{
             display: "grid",

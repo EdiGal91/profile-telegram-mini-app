@@ -75,6 +75,26 @@ export function ProfileStepper() {
               </Button>
             );
           })}
+
+          {/* Clear data button */}
+          <Button
+            size="s"
+            mode="outline"
+            onClick={() => {
+              if (confirm("Вы уверены? Все данные анкеты будут удалены.")) {
+                localStorage.removeItem("profile_draft");
+                window.location.reload();
+              }
+            }}
+            style={{
+              marginLeft: "auto",
+              backgroundColor: "var(--tg-theme-destructive-text-color)",
+              color: "white",
+              border: "none",
+            }}
+          >
+            🗑️
+          </Button>
         </div>
       </div>
     </Section>
