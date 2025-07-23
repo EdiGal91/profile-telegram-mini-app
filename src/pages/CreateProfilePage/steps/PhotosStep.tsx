@@ -17,6 +17,8 @@ export function PhotosStep() {
       isObjectURL: false,
     }));
   });
+  const [error, setError] = useState<string>("");
+  const [debugInfo, setDebugInfo] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const objectURLsRef = useRef<string[]>([]);
 
@@ -24,28 +26,73 @@ export function PhotosStep() {
   const maxPhotos = 10;
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
+    try {
+      setError("");
+      setDebugInfo(`File selection started. Current photos: ${photos.length}`);
 
-    files.forEach((file) => {
-      if (photos.length < maxPhotos && file.type.startsWith("image/")) {
-        // Create object URL for better mobile compatibility
-        const objectURL = URL.createObjectURL(file);
-        objectURLsRef.current.push(objectURL);
+      const files = Array.from(event.target.files || []);
+      setDebugInfo((prev) => prev + ` | Files selected: ${files.length}`);
 
-        setPhotos((prev) => [
-          ...prev,
-          {
-            url: objectURL,
-            file,
-            isObjectURL: true,
-          },
-        ]);
+      if (files.length === 0) {
+        setError("No files selected");
+        return;
       }
-    });
 
-    // Clear the input to allow selecting the same file again
-    if (event.target) {
-      event.target.value = "";
+      files.forEach((file, index) => {
+        try {
+          setDebugInfo(
+            (prev) =>
+              prev +
+              ` | Processing file ${index + 1}: ${file.name}, type: ${
+                file.type
+              }, size: ${file.size}`
+          );
+
+          if (photos.length >= maxPhotos) {
+            setError(`Maximum ${maxPhotos} photos allowed`);
+            return;
+          }
+
+          if (!file.type.startsWith("image/")) {
+            setError(`File ${file.name} is not an image. Type: ${file.type}`);
+            return;
+          }
+
+          // Create object URL for better mobile compatibility
+          const objectURL = URL.createObjectURL(file);
+          objectURLsRef.current.push(objectURL);
+          setDebugInfo(
+            (prev) =>
+              prev + ` | Object URL created: ${objectURL.substring(0, 50)}...`
+          );
+
+          setPhotos((prev) => {
+            const newPhotos = [
+              ...prev,
+              {
+                url: objectURL,
+                file,
+                isObjectURL: true,
+              },
+            ];
+            setDebugInfo(
+              (current) =>
+                current +
+                ` | Photos array updated, new length: ${newPhotos.length}`
+            );
+            return newPhotos;
+          });
+        } catch (fileError) {
+          setError(`Error processing file ${file.name}: ${fileError}`);
+        }
+      });
+
+      // Clear the input to allow selecting the same file again
+      if (event.target) {
+        event.target.value = "";
+      }
+    } catch (error) {
+      setError(`File selection error: ${error}`);
     }
   };
 
@@ -120,6 +167,66 @@ export function PhotosStep() {
   return (
     <List>
       <Section header="Фотографии">
+        {error && (
+          <div
+            style={{
+              padding: "16px",
+              background: "var(--tg-theme-destructive-text-color)",
+              color: "white",
+              margin: "8px",
+              borderRadius: "8px",
+              fontSize: "14px",
+            }}
+          >
+            ❌ Ошибка: {error}
+          </div>
+        )}
+
+        {debugInfo && (
+          <div
+            style={{
+              padding: "16px",
+              background: "var(--tg-theme-section-bg-color)",
+              color: "var(--tg-theme-text-color)",
+              margin: "8px",
+              borderRadius: "8px",
+              fontSize: "12px",
+              wordBreak: "break-all",
+            }}
+          >
+            🐛 Debug: {debugInfo}
+          </div>
+        )}
+
+        <div
+          style={{
+            padding: "16px",
+            background: "var(--tg-theme-hint-color)",
+            color: "var(--tg-theme-bg-color)",
+            margin: "8px",
+            borderRadius: "8px",
+            fontSize: "14px",
+          }}
+        >
+          📊 Текущее состояние: {photos.length} фото из {maxPhotos}
+          <br />
+          🔧 Valid: {isValid ? "✅" : "❌"} | Object URLs:{" "}
+          {objectURLsRef.current.length}
+          <br />
+          {(debugInfo || error) && (
+            <Button
+              size="s"
+              style={{ marginTop: "8px" }}
+              onClick={() => {
+                setDebugInfo("");
+                setError("");
+              }}
+            >
+              Очистить лог
+            </Button>
+          )}
+        </div>
+
         <Text style={{ padding: "16px", opacity: 0.7 }}>
           Добавьте от 1 до {maxPhotos} фотографий. Первая фотография будет
           основной. Если фото не отображаются в мобильном приложении, они всё
@@ -133,9 +240,6 @@ export function PhotosStep() {
           multiple
           style={{ display: "none" }}
           onChange={handleFileSelect}
-          onError={(error) => {
-            alert(error);
-          }}
         />
 
         {photos.length < maxPhotos && (
@@ -147,6 +251,23 @@ export function PhotosStep() {
             📷 Добавить фотографии
           </Cell>
         )}
+
+        <Cell
+          onClick={() => {
+            // Test: Add a fake photo to see if display works
+            setPhotos((prev) => [
+              ...prev,
+              {
+                url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23ff6b6b'/%3E%3Ctext x='50' y='50' text-anchor='middle' dy='0.3em' fill='white'%3EТест%3C/text%3E%3C/svg%3E",
+                isObjectURL: false,
+              },
+            ]);
+            setDebugInfo((prev) => prev + " | Test photo added");
+          }}
+          interactiveAnimation="opacity"
+        >
+          🧪 Добавить тестовое фото
+        </Cell>
 
         <div
           style={{
