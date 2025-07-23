@@ -1,20 +1,17 @@
 import { useState, useEffect } from "react";
 import {
   Section,
-  Select,
   Button,
   List,
   Cell,
   Checkbox,
-  Input,
 } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
 
-const SERVICE_TYPES = ["Эскорт", "Массаж", "Компаньонка", "Модель", "Другое"];
-
 const PREDEFINED_SERVICES = [
   "Классический секс",
-  "Оральный секс",
+  "Оральный секс в презервативе",
+  "Оральный секс без презерватива",
   "Анальный секс",
   "Массаж классический",
   "Эротический массаж",
@@ -24,18 +21,15 @@ const PREDEFINED_SERVICES = [
   "Стриптиз",
   "Сопровождение на мероприятия",
   "Фотосессии",
-  "Видеозвонки",
 ];
 
 export function ServicesStep() {
   const { state, updateData, completeStep, setStep } = useProfile();
-  const [serviceType, setServiceType] = useState(state.data.serviceType || "");
   const [servicesList, setServicesList] = useState<string[]>(
     state.data.servicesList || []
   );
-  const [customService, setCustomService] = useState("");
 
-  const isValid = serviceType.length > 0 && servicesList.length > 0;
+  const isValid = servicesList.length > 0;
 
   const handleServiceToggle = (service: string) => {
     setServicesList((prev) =>
@@ -45,28 +39,21 @@ export function ServicesStep() {
     );
   };
 
-  const handleAddCustomService = () => {
-    if (customService.trim() && !servicesList.includes(customService.trim())) {
-      setServicesList((prev) => [...prev, customService.trim()]);
-      setCustomService("");
-    }
-  };
-
   const handleNext = () => {
     if (isValid) {
-      updateData({ serviceType, servicesList });
+      updateData({ servicesList });
       completeStep(3);
       setStep(4);
     }
   };
 
   const handlePrevious = () => {
-    updateData({ serviceType, servicesList });
+    updateData({ servicesList });
     setStep(2);
   };
 
   const handleSave = () => {
-    updateData({ serviceType, servicesList });
+    updateData({ servicesList });
     if (isValid) {
       completeStep(3);
     }
@@ -74,24 +61,10 @@ export function ServicesStep() {
 
   useEffect(() => {
     handleSave();
-  }, [serviceType, servicesList]);
+  }, [servicesList]);
 
   return (
     <List>
-      <Section header="Тип услуг">
-        <Select
-          header="Основная категория"
-          value={serviceType}
-          onChange={(e) => setServiceType(e.target.value)}
-        >
-          {SERVICE_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </Select>
-      </Section>
-
       <Section header="Список услуг">
         {PREDEFINED_SERVICES.map((service) => (
           <Cell
@@ -108,23 +81,6 @@ export function ServicesStep() {
             {service}
           </Cell>
         ))}
-
-        <div style={{ padding: "16px" }}>
-          <Input
-            placeholder="Добавить свою услугу"
-            value={customService}
-            onChange={(e) => setCustomService(e.target.value)}
-            after={
-              <Button
-                size="s"
-                disabled={!customService.trim()}
-                onClick={handleAddCustomService}
-              >
-                Добавить
-              </Button>
-            }
-          />
-        </div>
 
         {servicesList
           .filter((s) => !PREDEFINED_SERVICES.includes(s))
