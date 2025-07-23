@@ -41,8 +41,10 @@ function profileReducer(
       return { ...state, isLoading: action.loading };
     case "LOAD_SAVED_DATA":
       return {
+        ...initialState,
         ...action.data,
-        completedSteps: new Set(action.data.completedSteps),
+        completedSteps: new Set(action.data.completedSteps || []),
+        data: action.data.data || {},
       };
     default:
       return state;
@@ -61,22 +63,30 @@ interface ProfileContextType {
 const ProfileContext = createContext<ProfileContextType | null>(null);
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(profileReducer, initialState);
-
-  // Load saved data on mount
-  useEffect(() => {
-    const savedData = localStorage.getItem(STORAGE_KEY);
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        dispatch({ type: "LOAD_SAVED_DATA", data: parsed });
-      } catch (error) {
-        console.error("Failed to load saved profile data:", error);
+  // Initialize with saved data
+  const [state, dispatch] = useReducer(
+    profileReducer,
+    initialState,
+    (initial) => {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          return {
+            ...initial,
+            ...parsed,
+            completedSteps: new Set(parsed.completedSteps || []),
+            data: parsed.data || {},
+          };
+        } catch (error) {
+          console.error("Failed to load saved profile data:", error);
+        }
       }
+      return initial;
     }
-  }, []);
+  );
 
-  // Save data whenever state changes
+  // Save data whenever state changes (but not on initial load)
   useEffect(() => {
     const dataToSave = {
       ...state,
