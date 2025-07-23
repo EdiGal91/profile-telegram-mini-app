@@ -3,7 +3,7 @@ import { useProfile } from "@/context/ProfileContext";
 import { PROFILE_STEPS } from "@/types/profile";
 
 export function ProfileStepper() {
-  const { state, setStep, canGoToStep } = useProfile();
+  const { state, setStep, canGoToStep, isStepValid } = useProfile();
 
   return (
     <Section header="Создание анкеты">
@@ -45,17 +45,36 @@ export function ProfileStepper() {
             flexWrap: "wrap",
           }}
         >
-          {PROFILE_STEPS.map((step) => (
-            <Button
-              key={step.id}
-              size="s"
-              mode={state.currentStep === step.id ? "filled" : "outline"}
-              disabled={!canGoToStep(step.id)}
-              onClick={() => canGoToStep(step.id) && setStep(step.id)}
-            >
-              {step.id}
-            </Button>
-          ))}
+          {PROFILE_STEPS.map((step) => {
+            const isCurrent = state.currentStep === step.id;
+            const isCompleted = state.completedSteps.has(step.id);
+            const isValid = isStepValid(step.id);
+            const canNavigate = canGoToStep(step.id);
+
+            // Determine button mode based on state
+            let mode: "filled" | "outline" | "plain" = "outline";
+            if (isCurrent) {
+              mode = isValid ? "filled" : "outline";
+            } else if (isCompleted && isValid) {
+              mode = "filled";
+            }
+
+            return (
+              <Button
+                key={step.id}
+                size="s"
+                mode={mode}
+                disabled={!canNavigate}
+                onClick={() => canNavigate && setStep(step.id)}
+                style={{
+                  opacity: !canNavigate ? 0.4 : 1,
+                }}
+              >
+                {step.id}
+                {isCompleted && isValid && "✓"}
+              </Button>
+            );
+          })}
         </div>
       </div>
     </Section>

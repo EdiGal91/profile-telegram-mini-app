@@ -58,6 +58,7 @@ interface ProfileContextType {
   completeStep: (step: number) => void;
   saveProgress: () => void;
   canGoToStep: (step: number) => boolean;
+  isStepValid: (step: number) => boolean;
 }
 
 const ProfileContext = createContext<ProfileContextType | null>(null);
@@ -116,8 +117,56 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }, 1000);
   };
 
+  const isStepValid = (step: number): boolean => {
+    switch (step) {
+      case 1: // Basic Info
+        return !!(
+          state.data.name?.trim() &&
+          state.data.description?.trim() &&
+          state.data.name.length >= 2 &&
+          state.data.description.length >= 10
+        );
+      case 2: // Location
+        return !!(
+          state.data.location?.country &&
+          state.data.location?.city &&
+          state.data.clientCountries?.length
+        );
+      case 3: // Services
+        return !!state.data.servicesList?.length;
+      case 4: // Photos
+        return !!state.data.photos?.length;
+      case 5: // Contact
+        return !!(
+          state.data.contactInfo?.phone ||
+          state.data.contactInfo?.telegram ||
+          state.data.contactInfo?.email
+        );
+      case 6: // Pricing
+        return !!(state.data.pricing?.incall || state.data.pricing?.outcall);
+      default:
+        return false;
+    }
+  };
+
   const canGoToStep = (step: number) => {
     if (step === 1) return true;
+
+    // Can't go forward if current step is invalid
+    if (step > state.currentStep) {
+      if (!isStepValid(state.currentStep)) {
+        return false;
+      }
+
+      // Check that all steps between current and target are valid
+      for (let i = state.currentStep + 1; i < step; i++) {
+        if (!isStepValid(i)) {
+          return false;
+        }
+      }
+    }
+
+    // Check if previous steps are completed or step is already accessible
     return state.completedSteps.has(step - 1) || state.completedSteps.has(step);
   };
 
@@ -130,6 +179,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         completeStep,
         saveProgress,
         canGoToStep,
+        isStepValid,
       }}
     >
       {children}
