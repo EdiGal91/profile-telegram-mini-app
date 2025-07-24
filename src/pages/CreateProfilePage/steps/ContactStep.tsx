@@ -50,6 +50,7 @@ export function ContactStep() {
 
   // Auto-fill Telegram username if available
   useEffect(() => {
+    console.log("initDataState", initDataState);
     if (initDataState?.user?.username && !contactInfo.telegram) {
       setContactInfo((prev) => ({
         ...prev,
