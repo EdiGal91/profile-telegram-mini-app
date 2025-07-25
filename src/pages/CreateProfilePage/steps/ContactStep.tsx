@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Section, Input, Button, List } from "@telegram-apps/telegram-ui";
+import { Section, Button, List } from "@telegram-apps/telegram-ui";
 import { useSignal, initData } from "@telegram-apps/sdk-react";
 import { useProfile } from "@/context/ProfileContext";
 
