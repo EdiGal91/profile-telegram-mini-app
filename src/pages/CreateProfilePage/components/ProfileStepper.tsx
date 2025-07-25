@@ -1,3 +1,4 @@
+import React from "react";
 import { Section, Button, Text } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
 import { PROFILE_STEPS } from "@/types/profile";
@@ -51,12 +52,34 @@ export function ProfileStepper() {
             const isValid = isStepValid(step.id);
             const canNavigate = canGoToStep(step.id);
 
-            // Determine button mode based on state
+            // Determine styling based on state
+            let buttonStyle: React.CSSProperties = {
+              opacity: !canNavigate ? 0.4 : 1,
+            };
+
             let mode: "filled" | "outline" | "plain" = "outline";
+            let content = step.id.toString();
+
             if (isCurrent) {
-              mode = isValid ? "filled" : "outline";
-            } else if (isCompleted && isValid) {
+              // Active step - blue background
               mode = "filled";
+              buttonStyle = {
+                ...buttonStyle,
+                backgroundColor: "var(--tg-theme-button-color)",
+                color: "var(--tg-theme-button-text-color)",
+                border: "none",
+              };
+            } else if (isCompleted && isValid) {
+              // Completed step - green with checkmark
+              mode = "filled";
+              content = "✓";
+              buttonStyle = {
+                ...buttonStyle,
+                backgroundColor: "#4CAF50",
+                color: "white",
+                border: "none",
+                fontWeight: "bold",
+              };
             }
 
             return (
@@ -66,12 +89,9 @@ export function ProfileStepper() {
                 mode={mode}
                 disabled={!canNavigate}
                 onClick={() => canNavigate && setStep(step.id)}
-                style={{
-                  opacity: !canNavigate ? 0.4 : 1,
-                }}
+                style={buttonStyle}
               >
-                {step.id}
-                {isCompleted && isValid && "✓"}
+                {content}
               </Button>
             );
           })}
