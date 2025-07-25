@@ -145,7 +145,7 @@ export function LocationStep() {
         )}
       </Section>
 
-      <Section header="Пользователям из каких стран выша отображать вашу анкету?">
+      <Section header="Пользователям из каких стран отображать вашу анкету?">
         {COUNTRIES.map((country) => (
           <Cell
             key={country}
