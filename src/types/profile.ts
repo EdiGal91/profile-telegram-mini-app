@@ -22,6 +22,8 @@ export interface ProfileData {
     phone?: string;
     telegram?: string;
     email?: string;
+    exposeTelegram?: boolean;
+    exposeWhatsApp?: boolean;
   };
 
   // Step 6: Pricing
