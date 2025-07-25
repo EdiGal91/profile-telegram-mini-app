@@ -63,11 +63,8 @@ export function PricingStep() {
     }
   );
 
-  // Check if at least one price is set
-  const isValid = Object.values(pricing.rates).some(
-    (rate) =>
-      (rate.incall && rate.incall > 0) || (rate.outcall && rate.outcall > 0)
-  );
+  // Pricing is optional - always valid
+  const isValid = true;
 
   const handleCurrencyChange = (currency: string) => {
     setPricing((prev) => ({ ...prev, currency }));
@@ -215,10 +212,7 @@ export function PricingStep() {
       </Section>
 
       <Section header="Завершение">
-        <Text style={{ padding: "16px" }}>
-          Поздравляем! Вы заполнили все необходимые поля для создания анкеты.
-          После сохранения ваша анкета будет создана как черновик.
-        </Text>
+        <Text style={{ padding: "16px" }}>Анкета готова к сохранению.</Text>
 
         <div style={{ padding: "16px", display: "flex", gap: "12px" }}>
           <Button size="l" mode="outline" stretched onClick={handlePrevious}>

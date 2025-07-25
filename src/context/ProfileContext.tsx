@@ -143,14 +143,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           state.data.contactInfo?.email
         );
       case 6: // Pricing
-        return !!(
-          state.data.pricing?.rates &&
-          Object.values(state.data.pricing.rates).some(
-            (rate) =>
-              (rate.incall && rate.incall > 0) ||
-              (rate.outcall && rate.outcall > 0)
-          )
-        );
+        return true; // Pricing is optional
       default:
         return false;
     }
