@@ -10,23 +10,43 @@ import {
 import { useProfile } from "@/context/ProfileContext";
 import { useNavigate } from "react-router-dom";
 
-const CURRENCIES = [
-  { value: "RUB", label: "₽ Рубли" },
-  { value: "USD", label: "$ Доллары" },
-  { value: "EUR", label: "€ Евро" },
-  { value: "UAH", label: "₴ Гривны" },
-  { value: "KZT", label: "₸ Тенге" },
-];
+// Country-specific currencies + USD
+const COUNTRY_CURRENCIES = {
+  Россия: [
+    { value: "RUB", label: "₽ Рубли" },
+    { value: "USD", label: "$ Доллары" },
+  ],
+  Украина: [
+    { value: "UAH", label: "₴ Гривны" },
+    { value: "USD", label: "$ Доллары" },
+  ],
+  Грузия: [
+    { value: "GEL", label: "₾ Лари" },
+    { value: "USD", label: "$ Доллары" },
+  ],
+  Турция: [
+    { value: "TRY", label: "₺ Лиры" },
+    { value: "USD", label: "$ Доллары" },
+  ],
+} as const;
 
 export function PricingStep() {
   const { state, updateData, completeStep, saveProgress, setStep } =
     useProfile();
   const navigate = useNavigate();
+
+  // Get user's country to determine available currencies
+  const userCountry = state.data.location?.country;
+  const availableCurrencies =
+    userCountry && userCountry in COUNTRY_CURRENCIES
+      ? COUNTRY_CURRENCIES[userCountry as keyof typeof COUNTRY_CURRENCIES]
+      : COUNTRY_CURRENCIES["Россия"]; // Default to Russia currencies
+
   const [pricing, setPricing] = useState(
     state.data.pricing || {
       incall: 0,
       outcall: 0,
-      currency: "RUB",
+      currency: availableCurrencies[0].value, // Default to national currency
     }
   );
 
@@ -76,7 +96,7 @@ export function PricingStep() {
           value={pricing.currency}
           onChange={(e) => handlePricingChange("currency", e.target.value)}
         >
-          {CURRENCIES.map((curr) => (
+          {availableCurrencies.map((curr) => (
             <option key={curr.value} value={curr.value}>
               {curr.label}
             </option>
