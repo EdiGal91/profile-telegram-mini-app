@@ -10,6 +10,14 @@ import {
 import { useProfile } from "@/context/ProfileContext";
 import { useNavigate } from "react-router-dom";
 
+// Available time durations
+const TIME_DURATIONS = [
+  { value: "30min", label: "30 минут" },
+  { value: "1hour", label: "1 час" },
+  { value: "2hours", label: "2 часа" },
+  { value: "6hours", label: "6 часов" },
+];
+
 // Country-specific currencies + USD
 const COUNTRY_CURRENCIES = {
   Россия: [
@@ -42,21 +50,62 @@ export function PricingStep() {
       ? COUNTRY_CURRENCIES[userCountry as keyof typeof COUNTRY_CURRENCIES]
       : COUNTRY_CURRENCIES["Россия"]; // Default to Russia currencies
 
+  // Get currency symbol for display
+  const getCurrencySymbol = (currencyCode: string) => {
+    const currency = availableCurrencies.find((c) => c.value === currencyCode);
+    return currency?.label.split(" ")[0] || currencyCode; // Extract symbol part
+  };
+
   const [pricing, setPricing] = useState(
     state.data.pricing || {
-      incall: 0,
-      outcall: 0,
-      currency: availableCurrencies[0].value, // Default to national currency
+      currency: availableCurrencies[0].value,
+      rates: {},
     }
   );
 
-  const isValid = pricing.incall > 0 || pricing.outcall > 0;
+  // Check if at least one price is set
+  const isValid = Object.values(pricing.rates).some(
+    (rate) =>
+      (rate.incall && rate.incall > 0) || (rate.outcall && rate.outcall > 0)
+  );
 
-  const handlePricingChange = (
-    field: keyof typeof pricing,
-    value: string | number
+  const handleCurrencyChange = (currency: string) => {
+    setPricing((prev) => ({ ...prev, currency }));
+  };
+
+  const handleRateChange = (
+    duration: string,
+    type: "incall" | "outcall",
+    value: number
   ) => {
-    setPricing((prev) => ({ ...prev, [field]: value }));
+    setPricing((prev) => {
+      const newRates = { ...prev.rates };
+
+      if (value > 0) {
+        // Set the price if it's a valid positive number
+        newRates[duration] = {
+          ...newRates[duration],
+          [type]: value,
+        };
+      } else {
+        // Remove the price if it's 0 or empty
+        if (newRates[duration]) {
+          const { [type]: _, ...remainingRates } = newRates[duration];
+
+          // If no rates left for this duration, remove the duration entirely
+          if (Object.keys(remainingRates).length === 0) {
+            delete newRates[duration];
+          } else {
+            newRates[duration] = remainingRates;
+          }
+        }
+      }
+
+      return {
+        ...prev,
+        rates: newRates,
+      };
+    });
   };
 
   const handleComplete = () => {
@@ -94,7 +143,7 @@ export function PricingStep() {
         <Select
           header="Валюта"
           value={pricing.currency}
-          onChange={(e) => handlePricingChange("currency", e.target.value)}
+          onChange={(e) => handleCurrencyChange(e.target.value)}
         >
           {availableCurrencies.map((curr) => (
             <option key={curr.value} value={curr.value}>
@@ -103,32 +152,66 @@ export function PricingStep() {
           ))}
         </Select>
 
-        <Input
-          header="Инколл (у вас)"
-          placeholder="0"
-          value={pricing.incall.toString()}
-          onChange={(e) =>
-            handlePricingChange("incall", parseInt(e.target.value) || 0)
-          }
-          type="number"
-          min="0"
-        />
-
-        <Input
-          header="Аутколл (выезд)"
-          placeholder="0"
-          value={pricing.outcall.toString()}
-          onChange={(e) =>
-            handlePricingChange("outcall", parseInt(e.target.value) || 0)
-          }
-          type="number"
-          min="0"
-        />
-
         <Text style={{ padding: "16px", opacity: 0.7, fontSize: "14px" }}>
-          Указывайте цену за час. Вы можете указать только один тип услуг или
-          оба.
+          Вы можете указать цены для разных временных интервалов. Вы можете
+          указать только инколл, только аутколл, или оба.
         </Text>
+
+        {TIME_DURATIONS.map((duration) => (
+          <div
+            key={duration.value}
+            style={{
+              padding: "16px",
+              borderBottom: "1px solid var(--tg-theme-section-bg-color)",
+            }}
+          >
+            <Text
+              style={{
+                fontWeight: "500",
+                marginBottom: "12px",
+                fontSize: "16px",
+              }}
+            >
+              {duration.label}
+            </Text>
+
+            <div style={{ display: "flex", gap: "12px" }}>
+              <div style={{ flex: 1 }}>
+                <Input
+                  header={`Инколл ${getCurrencySymbol(pricing.currency)}`}
+                  placeholder="0"
+                  value={
+                    pricing.rates[duration.value]?.incall?.toString() || ""
+                  }
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const numValue = value === "" ? 0 : parseInt(value) || 0;
+                    handleRateChange(duration.value, "incall", numValue);
+                  }}
+                  type="number"
+                  min="0"
+                />
+              </div>
+
+              <div style={{ flex: 1 }}>
+                <Input
+                  header={`Аутколл ${getCurrencySymbol(pricing.currency)}`}
+                  placeholder="0"
+                  value={
+                    pricing.rates[duration.value]?.outcall?.toString() || ""
+                  }
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const numValue = value === "" ? 0 : parseInt(value) || 0;
+                    handleRateChange(duration.value, "outcall", numValue);
+                  }}
+                  type="number"
+                  min="0"
+                />
+              </div>
+            </div>
+          </div>
+        ))}
       </Section>
 
       <Section header="Завершение">

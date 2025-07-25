@@ -28,9 +28,13 @@ export interface ProfileData {
 
   // Step 6: Pricing
   pricing: {
-    incall: number;
-    outcall: number;
     currency: string;
+    rates: {
+      [duration: string]: {
+        incall?: number;
+        outcall?: number;
+      };
+    };
   };
 }
 
