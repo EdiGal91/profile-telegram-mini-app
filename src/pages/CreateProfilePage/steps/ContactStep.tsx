@@ -13,6 +13,7 @@ const PHONE_FORMATS = {
     // Russian mobile: 10 digits, starts with 9
     validation: /^9\d{9}$/,
     example: "9123456789",
+    maxLength: 10,
   },
   Украина: {
     flag: "🇺🇦",
@@ -22,6 +23,7 @@ const PHONE_FORMATS = {
     // Ukrainian mobile: 9 digits, starts with specific prefixes
     validation: /^(39|50|63|66|67|68|73|91|92|93|94|95|96|97|98|99)\d{7}$/,
     example: "501234567",
+    maxLength: 9,
   },
   Грузия: {
     flag: "🇬🇪",
@@ -31,6 +33,7 @@ const PHONE_FORMATS = {
     // Georgian mobile: 9 digits, starts with 5
     validation: /^\d{9}$/,
     example: "551234567",
+    maxLength: 9,
   },
   Турция: {
     flag: "🇹🇷",
@@ -40,6 +43,7 @@ const PHONE_FORMATS = {
     // Turkish mobile: 10 digits, starts with 5
     validation: /^5\d{9}$/,
     example: "5123456789",
+    maxLength: 10,
   },
 } as const;
 
@@ -81,7 +85,14 @@ export function ContactStep() {
   const handlePhoneChange = (value: string) => {
     // Only allow digits, spaces, dashes, and parentheses for phone formatting
     const filteredValue = value.replace(/[^\d\s\-\(\)]/g, "");
-    setLocalPhone(filteredValue);
+
+    // Count only digits to check length limit
+    const digitCount = filteredValue.replace(/\D/g, "").length;
+
+    // Don't allow more digits than the country's max length
+    if (digitCount <= phoneFormat.maxLength) {
+      setLocalPhone(filteredValue);
+    }
   };
 
   const handleContactChange = (
