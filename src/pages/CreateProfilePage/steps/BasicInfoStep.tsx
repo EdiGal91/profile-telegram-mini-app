@@ -5,21 +5,52 @@ import {
   Textarea,
   Button,
   List,
+  Spinner,
 } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
+import { useProfilesContext } from "@/context/ProfilesContext";
+import { usePatchProfile } from "@/hooks/useProfiles";
 
 export function BasicInfoStep() {
   const { state, updateData, completeStep, setStep } = useProfile();
+  const { profiles } = useProfilesContext();
+  const patchProfile = usePatchProfile();
+
   const [name, setName] = useState(state.data.name || "");
   const [description, setDescription] = useState(state.data.description || "");
+  const [isLoading, setIsLoading] = useState(false);
 
   const isValid = name.trim().length >= 2 && description.trim().length >= 10;
 
-  const handleNext = () => {
-    if (isValid) {
-      updateData({ name: name.trim(), description: description.trim() });
-      completeStep(1);
-      setStep(2);
+  // Get the current draft profile
+  const draftProfile = profiles.data?.find((profile) => profile.isDraft);
+
+  const handleNext = async () => {
+    if (isValid && draftProfile) {
+      try {
+        setIsLoading(true);
+
+        // Update local state first
+        updateData({ name: name.trim(), description: description.trim() });
+
+        // Send PATCH request to update the profile
+        await patchProfile.mutateAsync({
+          id: draftProfile._id,
+          profile: {
+            name: name.trim(),
+            description: description.trim(),
+          },
+        });
+
+        // Complete step and move to next
+        completeStep(1);
+        setStep(2);
+      } catch (error) {
+        console.error("Failed to update profile:", error);
+        // You might want to show an error message to the user here
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -59,8 +90,22 @@ export function BasicInfoStep() {
         />
 
         <div style={{ padding: "16px" }}>
-          <Button size="l" stretched disabled={!isValid} onClick={handleNext}>
-            Далее: Местоположение
+          <Button
+            size="l"
+            stretched
+            disabled={!isValid || isLoading || !draftProfile}
+            onClick={handleNext}
+          >
+            {isLoading ? (
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
+                <Spinner size="s" />
+                <span>Сохранение...</span>
+              </div>
+            ) : (
+              "Далее: Местоположение"
+            )}
           </Button>
         </div>
       </Section>

@@ -36,6 +36,15 @@ export const updateProfile = async (
   return response.data;
 };
 
+// Update a profile using PATCH method
+export const patchProfile = async (
+  id: string,
+  profile: Partial<ApiProfile>
+): Promise<ApiProfile> => {
+  const response = await api.patch<ApiProfile>(`/profiles/${id}`, profile);
+  return response.data;
+};
+
 // Delete a profile
 export const deleteProfile = async (id: string): Promise<void> => {
   await api.delete(`/profiles/${id}`);

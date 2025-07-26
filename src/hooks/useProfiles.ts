@@ -3,10 +3,11 @@ import { useSignal, initData } from "@telegram-apps/sdk-react";
 import {
   fetchProfiles,
   createProfile,
+  createDraftProfile,
   updateProfile,
+  patchProfile,
   deleteProfile,
   uploadProfilePhotos,
-  createDraftProfile,
 } from "@/services/profileService";
 import { ApiProfile } from "@/types/api";
 
@@ -94,6 +95,29 @@ export const useUpdateProfile = () => {
       id: string;
       profile: Partial<ApiProfile>;
     }) => updateProfile(id, profile),
+    onSuccess: () => {
+      if (telegramId) {
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.byTelegramId(telegramId),
+        });
+      }
+    },
+  });
+};
+
+// Hook to patch a profile
+export const usePatchProfile = () => {
+  const queryClient = useQueryClient();
+  const telegramId = useTelegramId();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      profile,
+    }: {
+      id: string;
+      profile: Partial<ApiProfile>;
+    }) => patchProfile(id, profile),
     onSuccess: () => {
       if (telegramId) {
         queryClient.invalidateQueries({

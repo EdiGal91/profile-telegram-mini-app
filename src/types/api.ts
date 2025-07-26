@@ -1,6 +1,6 @@
 // API Profile type - what comes from the backend
 export interface ApiProfile {
-  id: string;
+  _id: string;
   telegramId: string;
   name: string;
   description: string;
