@@ -10,7 +10,7 @@ import {
 import { useSignal, initData } from "@telegram-apps/sdk-react";
 import { useProfile } from "@/context/ProfileContext";
 import { useProfilesContext } from "@/context/ProfilesContext";
-import { patchProfile } from "@/services/profileService";
+import { usePatchProfile } from "@/hooks/useProfiles";
 import {
   getCountriesForLanguage,
   getEscortLocationCountries,
@@ -23,6 +23,7 @@ const ALL_COUNTRIES_CODE = "ALL";
 export function LocationStep() {
   const { state, updateData, completeStep, setStep } = useProfile();
   const { profiles } = useProfilesContext();
+  const patchProfile = usePatchProfile();
 
   const [userCountryIso, setUserCountryIso] = useState(
     state.data.location?.country || ""
@@ -51,13 +52,18 @@ export function LocationStep() {
     const countriesFromBackend =
       draftProfile.visibleForCountries || draftProfile.clientCountries || [];
 
-    if (countryFromBackend && !userCountryIso) {
+    // Always sync with backend data, not just when local state is empty
+    if (countryFromBackend && countryFromBackend !== userCountryIso) {
       setUserCountryIso(countryFromBackend);
     }
-    if (cityFromBackend && !userCity) {
+    if (cityFromBackend && cityFromBackend !== userCity) {
       setUserCity(cityFromBackend);
     }
-    if (countriesFromBackend.length && clientCountriesIso.length === 0) {
+    if (
+      countriesFromBackend.length > 0 &&
+      JSON.stringify(countriesFromBackend) !==
+        JSON.stringify(clientCountriesIso)
+    ) {
       setClientCountriesIso(countriesFromBackend);
     }
   }, [draftProfile]);
@@ -112,7 +118,9 @@ export function LocationStep() {
       ka: "GE",
       tr: "TR",
     };
-    const detected = languageToCountryIso[initDataState?.user?.language_code];
+    const detected = initDataState?.user?.language_code
+      ? languageToCountryIso[initDataState.user.language_code]
+      : undefined;
     if (detected) setUserCountryIso(detected);
   }, [initDataState, userCountryIso]);
 
@@ -151,10 +159,13 @@ export function LocationStep() {
     });
 
     try {
-      await patchProfile(draftProfile._id, {
-        country: userCountryIso,
-        city: userCity,
-        visibleForCountries: clientCountriesIso,
+      await patchProfile.mutateAsync({
+        id: draftProfile._id,
+        profile: {
+          country: userCountryIso,
+          city: userCity,
+          visibleForCountries: clientCountriesIso,
+        },
       });
     } catch (error) {
       console.error("Failed to save location data:", error);
