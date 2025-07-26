@@ -19,6 +19,7 @@ if (import.meta.env.DEV) {
         data: config.data,
       }
     );
+
     return config;
   });
 
