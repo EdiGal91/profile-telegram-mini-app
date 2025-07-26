@@ -9,13 +9,18 @@ import {
   deleteProfile,
   uploadProfilePhotos,
 } from "@/services/profileService";
-import { ApiProfile } from "@/types/api";
+import { fetchServices } from "@/services/api";
+import { ApiProfile, ServicesResponse } from "@/types/api";
 
 // Query keys
 export const profileKeys = {
   all: ["profiles"] as const,
   byTelegramId: (telegramId: number) =>
     [...profileKeys.all, "byTelegramId", telegramId] as const,
+};
+
+export const serviceKeys = {
+  all: ["services"] as const,
 };
 
 // Custom hook to get current telegram ID
@@ -165,5 +170,15 @@ export const useUploadPhotos = () => {
         });
       }
     },
+  });
+};
+
+// Hook to fetch services
+export const useServices = () => {
+  return useQuery({
+    queryKey: serviceKeys.all,
+    queryFn: fetchServices,
+    staleTime: 1000 * 60 * 30, // Consider data fresh for 30 minutes
+    gcTime: 1000 * 60 * 60, // Keep in cache for 1 hour
   });
 };

@@ -41,3 +41,25 @@ export interface ApiError {
   message: string;
   statusCode: number;
 }
+
+// Services API types
+export interface ServiceOption {
+  code: string;
+  label: {
+    en: string;
+    ru: string;
+  };
+}
+
+export interface ServiceCategory {
+  label: {
+    en: string;
+    ru: string;
+  };
+  options: ServiceOption[];
+  multiSelect?: boolean;
+}
+
+export interface ServicesResponse {
+  [key: string]: ServiceCategory;
+}
