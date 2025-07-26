@@ -3,7 +3,7 @@ import { ProfilesResponse, ApiProfile } from "@/types/api";
 
 // Fetch profiles for a specific telegram user
 export const fetchProfiles = async (
-  telegramId: string
+  telegramId: number
 ): Promise<ProfilesResponse> => {
   const response = await api.get<ProfilesResponse>("/profiles", {
     params: { telegramId },
@@ -16,6 +16,14 @@ export const createProfile = async (
   profile: Omit<ApiProfile, "id" | "createdAt" | "updatedAt">
 ): Promise<ApiProfile> => {
   const response = await api.post<ApiProfile>("/profiles", profile);
+  return response.data;
+};
+
+// Create a draft profile (only telegramId and isDraft)
+export const createDraftProfile = async (telegramId: number) => {
+  const response = await api.post<ApiProfile>("/profiles", {
+    telegramId,
+  });
   return response.data;
 };
 

@@ -4,13 +4,27 @@ import type { FC } from "react";
 import { Link } from "@/components/Link/Link.tsx";
 import { Page } from "@/components/Page.tsx";
 import { useProfilesContext } from "@/context/ProfilesContext.tsx";
+import { useNavigate } from "react-router-dom";
+import { useCreateDraftProfile } from "@/hooks/useProfiles";
 
 export const IndexPage: FC = () => {
   const { profiles, telegramId } = useProfilesContext();
-
-  // Check if user has a draft profile
   const draftProfile = profiles.data?.find((profile) => profile.isDraft);
   const hasDraft = !!draftProfile;
+  const navigate = useNavigate();
+  const createDraftProfile = useCreateDraftProfile();
+
+  const handleCreateProfile = async () => {
+    if (!hasDraft) {
+      try {
+        await createDraftProfile.mutateAsync();
+      } catch (e) {
+        // Optionally show error to user
+        return;
+      }
+    }
+    navigate("/profile-create");
+  };
 
   return (
     <Page back={false}>
@@ -27,11 +41,13 @@ export const IndexPage: FC = () => {
               </Cell>
             </Link>
           ) : (
-            <Link to="/profile-create">
-              <Cell subtitle="Создать черновик своей анкеты">
-                Создать анкету
-              </Cell>
-            </Link>
+            <Cell
+              subtitle="Создать черновик своей анкеты"
+              onClick={handleCreateProfile}
+              interactiveAnimation="opacity"
+            >
+              Создать анкету
+            </Cell>
           )}
         </Section>
 

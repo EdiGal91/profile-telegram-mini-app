@@ -6,20 +6,21 @@ import {
   updateProfile,
   deleteProfile,
   uploadProfilePhotos,
+  createDraftProfile,
 } from "@/services/profileService";
 import { ApiProfile } from "@/types/api";
 
 // Query keys
 export const profileKeys = {
   all: ["profiles"] as const,
-  byTelegramId: (telegramId: string) =>
+  byTelegramId: (telegramId: number) =>
     [...profileKeys.all, "byTelegramId", telegramId] as const,
 };
 
 // Custom hook to get current telegram ID
 export const useTelegramId = () => {
   const initDataState = useSignal(initData.state);
-  return initDataState?.user?.id?.toString() || "";
+  return initDataState?.user?.id;
 };
 
 // Hook to fetch user's profiles
@@ -27,11 +28,38 @@ export const useProfiles = () => {
   const telegramId = useTelegramId();
 
   return useQuery({
-    queryKey: profileKeys.byTelegramId(telegramId),
-    queryFn: () => fetchProfiles(telegramId),
+    queryKey: profileKeys.byTelegramId(telegramId || 0),
+    queryFn: () => {
+      if (!telegramId) {
+        throw new Error("Telegram ID is required");
+      }
+      return fetchProfiles(telegramId);
+    },
     enabled: !!telegramId, // Only run if we have a telegram ID
     staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
     gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes (was cacheTime in v4)
+  });
+};
+
+// Hook to create a draft profile
+export const useCreateDraftProfile = () => {
+  const queryClient = useQueryClient();
+  const telegramId = useTelegramId();
+
+  return useMutation({
+    mutationFn: () => {
+      if (!telegramId) {
+        throw new Error("Telegram ID is required");
+      }
+      return createDraftProfile(telegramId);
+    },
+    onSuccess: () => {
+      if (telegramId) {
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.byTelegramId(telegramId),
+        });
+      }
+    },
   });
 };
 
@@ -43,10 +71,12 @@ export const useCreateProfile = () => {
   return useMutation({
     mutationFn: createProfile,
     onSuccess: () => {
-      // Invalidate and refetch profiles
-      queryClient.invalidateQueries({
-        queryKey: profileKeys.byTelegramId(telegramId),
-      });
+      if (telegramId) {
+        // Invalidate and refetch profiles
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.byTelegramId(telegramId),
+        });
+      }
     },
   });
 };
@@ -65,9 +95,11 @@ export const useUpdateProfile = () => {
       profile: Partial<ApiProfile>;
     }) => updateProfile(id, profile),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: profileKeys.byTelegramId(telegramId),
-      });
+      if (telegramId) {
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.byTelegramId(telegramId),
+        });
+      }
     },
   });
 };
@@ -80,9 +112,11 @@ export const useDeleteProfile = () => {
   return useMutation({
     mutationFn: deleteProfile,
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: profileKeys.byTelegramId(telegramId),
-      });
+      if (telegramId) {
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.byTelegramId(telegramId),
+        });
+      }
     },
   });
 };
@@ -101,9 +135,11 @@ export const useUploadPhotos = () => {
       photos: File[];
     }) => uploadProfilePhotos(profileId, photos),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: profileKeys.byTelegramId(telegramId),
-      });
+      if (telegramId) {
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.byTelegramId(telegramId),
+        });
+      }
     },
   });
 };
