@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Create axios instance with base configuration
 export const api = axios.create({
-  baseURL: "https://escore-i6sd.onrender.com",
+  baseURL: import.meta.env.VITE_BACKEND_URL,
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
