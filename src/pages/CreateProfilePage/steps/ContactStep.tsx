@@ -238,8 +238,6 @@ export function ContactStep() {
       try {
         setIsLoading(true);
 
-        const fullPhone = phoneFormat.code + " " + localPhone;
-
         // Update local state first
         updateData({
           contactInfo: {

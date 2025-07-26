@@ -1,5 +1,5 @@
 // src/pages/CreateProfilePage/steps/ServicesStep.tsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Section,
   List,
@@ -14,7 +14,7 @@ import { useServices, usePatchProfile } from "@/hooks/useProfiles";
 import { ServiceCategory, ServiceOption } from "@/types/api";
 
 export function ServicesStep() {
-  const { state, updateData, completeStep, setStep } = useProfile();
+  const { updateData, completeStep, setStep } = useProfile();
   const { profiles } = useProfilesContext();
 
   const {

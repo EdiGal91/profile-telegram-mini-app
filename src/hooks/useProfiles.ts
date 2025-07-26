@@ -10,7 +10,7 @@ import {
   uploadProfilePhotos,
 } from "@/services/profileService";
 import { fetchServices } from "@/services/api";
-import { ApiProfile, ServicesResponse } from "@/types/api";
+import { ApiProfile } from "@/types/api";
 
 // Query keys
 export const profileKeys = {
