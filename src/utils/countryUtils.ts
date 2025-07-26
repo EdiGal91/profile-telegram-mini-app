@@ -30,10 +30,6 @@ export const COUNTRY_NAMES: Record<string, Record<string, string>> = {
     IE: "Ирландия",
     CH: "Швейцария",
     SE: "Швеция",
-    KG: "Киргизия",
-    TJ: "Таджикистан",
-    UZ: "Узбекистан",
-    TM: "Туркменистан",
   },
   en: {
     RU: "Russia",
@@ -63,10 +59,6 @@ export const COUNTRY_NAMES: Record<string, Record<string, string>> = {
     IE: "Ireland",
     CH: "Switzerland",
     SE: "Sweden",
-    KG: "Kyrgyzstan",
-    TJ: "Tajikistan",
-    UZ: "Uzbekistan",
-    TM: "Turkmenistan",
   },
   // Add more languages as needed
 };
