@@ -10,24 +10,27 @@ import {
 import { useSignal, initData } from "@telegram-apps/sdk-react";
 import { useProfile } from "@/context/ProfileContext";
 import { useProfilesContext } from "@/context/ProfilesContext";
+import { patchProfile } from "@/services/profileService";
 import {
-  COUNTRIES,
-  ESCORT_LOCATION_COUNTRIES,
-  CITIES_BY_COUNTRY,
-} from "@/types/profile";
+  getCountryName,
+  getCountriesForLanguage,
+  getEscortLocationCountries,
+  validateCountryMappings,
+} from "@/utils/countryUtils";
+import { getCitiesForCountry } from "@/utils/cityUtils";
 
 export function LocationStep() {
   const { state, updateData, completeStep, setStep } = useProfile();
   const { profiles } = useProfilesContext();
 
-  // Her location (country + city)
-  const [userCountry, setUserCountry] = useState(
+  // Her location (country + city) - using ISO codes
+  const [userCountryIso, setUserCountryIso] = useState(
     state.data.location?.country || ""
   );
   const [userCity, setUserCity] = useState(state.data.location?.city || "");
 
-  // Countries where she serves clients
-  const [clientCountries, setClientCountries] = useState<string[]>(
+  // Countries where she serves clients - using ISO codes
+  const [clientCountriesIso, setClientCountriesIso] = useState<string[]>(
     state.data.clientCountries || []
   );
 
@@ -36,25 +39,41 @@ export function LocationStep() {
   // Get the current draft profile
   const draftProfile = profiles.data?.find((profile) => profile.isDraft);
 
+  // Test country mappings in development
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      validateCountryMappings();
+    }
+  }, []);
+
   // Sync local state with draft profile data when it becomes available
   useEffect(() => {
     if (draftProfile) {
-      // Sync location data
-      if (draftProfile.location?.country && !userCountry) {
-        setUserCountry(draftProfile.location.country);
+      // Sync location data - use ISO codes directly
+      const countryFromBackend =
+        draftProfile.location?.country || draftProfile.country;
+      const cityFromBackend = draftProfile.location?.city || draftProfile.city;
+
+      if (countryFromBackend && !userCountryIso) {
+        setUserCountryIso(countryFromBackend);
       }
-      if (draftProfile.location?.city && !userCity) {
-        setUserCity(draftProfile.location.city);
+      if (cityFromBackend && !userCity) {
+        setUserCity(cityFromBackend);
       }
-      // Sync client countries data
+      // Sync client countries data - use ISO codes directly
       if (
-        draftProfile.clientCountries?.length &&
-        clientCountries.length === 0
+        (draftProfile.visibleForCountries?.length ||
+          draftProfile.clientCountries?.length) &&
+        clientCountriesIso.length === 0
       ) {
-        setClientCountries(draftProfile.clientCountries);
+        const countriesToUse =
+          draftProfile.visibleForCountries ||
+          draftProfile.clientCountries ||
+          [];
+        setClientCountriesIso(countriesToUse);
       }
     }
-  }, [draftProfile, userCountry, userCity, clientCountries]);
+  }, [draftProfile, userCountryIso, userCity, clientCountriesIso]);
 
   // Sync ProfileContext state with draft profile data
   useEffect(() => {
@@ -64,31 +83,36 @@ export function LocationStep() {
         clientCountries: string[];
       }> = {};
 
+      const countryFromBackend =
+        draftProfile.location?.country || draftProfile.country;
+      const cityFromBackend = draftProfile.location?.city || draftProfile.city;
+
       if (
-        draftProfile.location?.country &&
-        draftProfile.location.country !== state.data.location?.country
+        countryFromBackend &&
+        countryFromBackend !== state.data.location?.country
       ) {
         updates.location = {
-          country: draftProfile.location.country,
-          city: state.data.location?.city || draftProfile.location.city || "",
+          country: countryFromBackend,
+          city: state.data.location?.city || cityFromBackend || "",
+        };
+      }
+      if (cityFromBackend && cityFromBackend !== state.data.location?.city) {
+        updates.location = {
+          country: state.data.location?.country || countryFromBackend || "",
+          city: cityFromBackend,
         };
       }
       if (
-        draftProfile.location?.city &&
-        draftProfile.location.city !== state.data.location?.city
-      ) {
-        updates.location = {
-          country:
-            state.data.location?.country || draftProfile.location.country || "",
-          city: draftProfile.location.city,
-        };
-      }
-      if (
-        draftProfile.clientCountries?.length &&
+        (draftProfile.visibleForCountries?.length ||
+          draftProfile.clientCountries?.length) &&
         JSON.stringify(draftProfile.clientCountries) !==
           JSON.stringify(state.data.clientCountries)
       ) {
-        updates.clientCountries = draftProfile.clientCountries;
+        const countriesToUse =
+          draftProfile.visibleForCountries ||
+          draftProfile.clientCountries ||
+          [];
+        updates.clientCountries = countriesToUse;
       }
 
       if (Object.keys(updates).length > 0) {
@@ -103,102 +127,132 @@ export function LocationStep() {
   ]);
 
   const isValid =
-    userCountry.length > 0 && userCity.length > 0 && clientCountries.length > 0;
+    userCountryIso.length > 0 &&
+    userCity.length > 0 &&
+    clientCountriesIso.length > 0;
 
-  const availableCities = userCountry
-    ? CITIES_BY_COUNTRY[userCountry] || []
-    : [];
-
-  const handleClientCountryToggle = (selectedCountry: string) => {
-    setClientCountries((prev) =>
-      prev.includes(selectedCountry)
-        ? prev.filter((c) => c !== selectedCountry)
-        : [...prev, selectedCountry]
+  const handleClientCountryToggle = (selectedCountryIso: string) => {
+    setClientCountriesIso((prev) =>
+      prev.includes(selectedCountryIso)
+        ? prev.filter((c) => c !== selectedCountryIso)
+        : [...prev, selectedCountryIso]
     );
   };
 
-  const handleCountryChange = (country: string) => {
-    setUserCountry(country);
+  const handleCountryChange = (countryIso: string) => {
+    setUserCountryIso(countryIso);
     // Reset city when country changes
     setUserCity("");
   };
 
-  const handleNext = () => {
-    if (isValid) {
+  const handleNext = async () => {
+    if (isValid && draftProfile) {
+      // Validate that we have valid ISO codes
+      if (!userCountryIso) {
+        console.error("Invalid country selected:", userCountryIso);
+        return;
+      }
+
+      if (clientCountriesIso.length === 0) {
+        console.error("No valid countries selected for visibility");
+        return;
+      }
+
+      // Update local state
       updateData({
-        location: { country: userCountry, city: userCity },
-        clientCountries,
+        location: { country: userCountryIso, city: userCity },
+        clientCountries: clientCountriesIso,
       });
-      completeStep(2);
-      setStep(3);
+
+      try {
+        // Send data to backend
+        await patchProfile(draftProfile._id, {
+          country: userCountryIso,
+          city: userCity,
+          visibleForCountries: clientCountriesIso,
+        });
+
+        completeStep(2);
+        setStep(3);
+      } catch (error) {
+        console.error("Failed to save location data:", error);
+        // Still proceed to next step even if backend save fails
+        completeStep(2);
+        setStep(3);
+      }
     }
   };
 
-  const handlePrevious = () => {
-    updateData({
-      location: { country: userCountry, city: userCity },
-      clientCountries,
-    });
+  const handlePrevious = async () => {
+    if (draftProfile) {
+      // Update local state
+      updateData({
+        location: { country: userCountryIso, city: userCity },
+        clientCountries: clientCountriesIso,
+      });
+
+      try {
+        // Send data to backend
+        await patchProfile(draftProfile._id, {
+          country: userCountryIso,
+          city: userCity,
+          visibleForCountries: clientCountriesIso,
+        });
+      } catch (error) {
+        console.error("Failed to save location data:", error);
+      }
+    }
     setStep(1);
   };
 
-  const handleSave = () => {
-    updateData({
-      location: { country: userCountry, city: userCity },
-      clientCountries,
-    });
-    if (isValid) {
-      completeStep(2);
-    }
-  };
-
-  useEffect(() => {
-    handleSave();
-  }, [userCountry, userCity, clientCountries]);
+  // Removed auto-save useEffect - now only saves when user clicks Continue/Save
 
   // Auto-detect country from Telegram user data
   useEffect(() => {
-    if (!userCountry && initDataState?.user) {
-      const languageToCountry: Record<string, string> = {
-        ru: "Россия",
-        uk: "Украина",
-        ka: "Грузия",
-        tr: "Турция",
+    if (!userCountryIso && initDataState?.user) {
+      const languageToCountryIso: Record<string, string> = {
+        ru: "RU",
+        uk: "UA",
+        ka: "GE",
+        tr: "TR",
       };
 
-      const detectedCountry = initDataState.user.language_code
-        ? languageToCountry[initDataState.user.language_code]
+      const detectedCountryIso = initDataState.user.language_code
+        ? languageToCountryIso[initDataState.user.language_code]
         : null;
 
-      if (
-        detectedCountry &&
-        ESCORT_LOCATION_COUNTRIES.includes(detectedCountry)
-      ) {
-        setUserCountry(detectedCountry);
+      if (detectedCountryIso) {
+        setUserCountryIso(detectedCountryIso);
       }
-      // No automatic default - let user choose
     }
-  }, [initDataState, userCountry]);
+  }, [initDataState, userCountryIso]);
+
+  // Get countries for display
+  const escortCountries = getEscortLocationCountries();
+  const allCountries = getCountriesForLanguage();
+  const availableCities = userCountryIso
+    ? getCitiesForCountry(userCountryIso)
+    : [];
 
   return (
     <List>
       <Section header="Ваше местоположение">
         <Select
           header="Ваша страна"
-          value={userCountry}
+          value={userCountryIso}
           onChange={(e) => handleCountryChange(e.target.value)}
         >
           <option value="" disabled>
             Выберите страну
           </option>
-          {ESCORT_LOCATION_COUNTRIES.map((country) => (
-            <option key={country} value={country}>
-              {country}
+          {escortCountries.map((country) => (
+            <option key={country.iso} value={country.iso}>
+              {country.name}
             </option>
           ))}
         </Select>
 
-        {userCountry && (
+        {userCountryIso && (
           <Select
             header="Ваш город"
             value={userCity}
@@ -217,19 +271,19 @@ export function LocationStep() {
       </Section>
 
       <Section header="Пользователям из каких стран отображать Вашу анкету?">
-        {COUNTRIES.map((country) => (
+        {allCountries.map((country) => (
           <Cell
-            key={country}
-            onClick={() => handleClientCountryToggle(country)}
+            key={country.iso}
+            onClick={() => handleClientCountryToggle(country.iso)}
             after={
               <Checkbox
-                checked={clientCountries.includes(country)}
-                onChange={() => handleClientCountryToggle(country)}
+                checked={clientCountriesIso.includes(country.iso)}
+                onChange={() => handleClientCountryToggle(country.iso)}
               />
             }
             interactiveAnimation="opacity"
           >
-            {country}
+            {country.name}
           </Cell>
         ))}
       </Section>

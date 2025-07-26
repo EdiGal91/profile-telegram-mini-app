@@ -4,11 +4,15 @@ export interface ApiProfile {
   telegramId: string;
   name: string;
   description: string;
-  location: {
-    country: string;
+  // Support both nested and flat location formats
+  location?: {
+    country: string; // ISO 3166-1 alpha-2 code (e.g., "GE", "IL")
     city: string;
   };
-  clientCountries: string[];
+  country?: string; // ISO 3166-1 alpha-2 code (flat format)
+  city?: string; // Flat format
+  visibleForCountries: string[]; // Array of ISO 3166-1 alpha-2 codes
+  clientCountries: string[]; // Legacy field - keeping for backward compatibility
   serviceType: string;
   servicesList: string[];
   photos: string[]; // URLs to uploaded photos

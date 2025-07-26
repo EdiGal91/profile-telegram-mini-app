@@ -1,90 +1,6 @@
-export interface ProfileData {
-  // Step 1: Basic Info
-  name: string;
-  description: string;
-
-  // Step 2: Location
-  location: {
-    country: string; // ISO 3166-1 alpha-2 code (e.g., "GE", "IL")
-    city: string;
-  };
-  clientCountries: string[]; // ISO 3166-1 alpha-2 codes
-  visibleForCountries: string[]; // ISO 3166-1 alpha-2 codes for backend
-
-  // Step 3: Services
-  serviceType: string;
-  servicesList: string[];
-
-  // Step 4: Photos
-  photos: string[];
-
-  // Step 5: Contact
-  contactInfo: {
-    phone?: string;
-    telegram?: string;
-    email?: string;
-    exposeTelegram?: boolean;
-    exposeWhatsApp?: boolean;
-  };
-
-  // Step 6: Pricing
-  pricing: {
-    currency: string;
-    rates: {
-      [duration: string]: {
-        incall?: number;
-        outcall?: number;
-      };
-    };
-  };
-}
-
-export interface ProfileState {
-  data: Partial<ProfileData>;
-  currentStep: number;
-  completedSteps: Set<number>;
-  isLoading: boolean;
-}
-
-// Countries for escort's location (limited selection)
-export const ESCORT_LOCATION_COUNTRIES = [
-  "Грузия",
-  "Россия",
-  "Турция",
-  "Украина",
-];
-
-// All countries for client selection
-export const COUNTRIES = [
-  "Россия",
-  "Турция",
-  "Армения",
-  "Израиль",
-  "Азербайджан",
-  "Казахстан",
-  "Беларусь",
-  "Украина",
-  "Индия",
-  "Грузия",
-  "Молдова",
-  "США",
-
-  "Германия",
-  "Польша",
-  "Великобритания",
-  "Франция",
-  "Греция",
-  "Италия",
-  "Нидерланды",
-  "Испания",
-
-  "Литва",
-  "Латвия",
-  "Эстония",
-];
-
-export const CITIES_BY_COUNTRY: Record<string, string[]> = {
-  Россия: [
+// Cities by country ISO code
+export const CITIES_BY_COUNTRY_ISO: Record<string, string[]> = {
+  RU: [
     "Москва",
     "Санкт-Петербург",
     "Екатеринбург",
@@ -100,7 +16,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Пермь",
     "Волгоград",
   ],
-  Турция: [
+  TR: [
     "Стамбул",
     "Анкара",
     "Измир",
@@ -112,7 +28,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Мерсин",
     "Кайсери",
   ],
-  Армения: [
+  AM: [
     "Ереван",
     "Гюмри",
     "Ванадзор",
@@ -122,7 +38,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Капан",
     "Горис",
   ],
-  Израиль: [
+  IL: [
     "Тель-Авив",
     "Иерусалим",
     "Хайфа",
@@ -132,7 +48,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Петах-Тиква",
     "Холон",
   ],
-  Азербайджан: [
+  AZ: [
     "Баку",
     "Гянджа",
     "Сумгаит",
@@ -142,7 +58,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Шеки",
     "Шамкир",
   ],
-  Казахстан: [
+  KZ: [
     "Алматы",
     "Нур-Султан",
     "Шымкент",
@@ -152,17 +68,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Павлодар",
     "Усть-Каменогорск",
   ],
-  Иран: [
-    "Тегеран",
-    "Мешхед",
-    "Исфахан",
-    "Кередж",
-    "Тебриз",
-    "Шираз",
-    "Ахваз",
-    "Кум",
-  ],
-  Беларусь: [
+  BY: [
     "Минск",
     "Гомель",
     "Могилёв",
@@ -172,7 +78,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Бобруйск",
     "Барановичи",
   ],
-  Украина: [
+  UA: [
     "Киев",
     "Харьков",
     "Одесса",
@@ -182,7 +88,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Львов",
     "Кривой Рог",
   ],
-  Индия: [
+  IN: [
     "Мумбаи",
     "Дели",
     "Бангалор",
@@ -192,7 +98,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Колката",
     "Пуна",
   ],
-  Грузия: [
+  GE: [
     "Тбилиси",
     "Кутаиси",
     "Батуми",
@@ -202,7 +108,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Поти",
     "Сухуми",
   ],
-  Молдова: [
+  MD: [
     "Кишинёв",
     "Тирасполь",
     "Бельцы",
@@ -212,7 +118,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Унгены",
     "Сороки",
   ],
-  США: [
+  US: [
     "Нью-Йорк",
     "Лос-Анджелес",
     "Чикаго",
@@ -224,7 +130,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Даллас",
     "Сан-Хосе",
   ],
-  Франция: [
+  FR: [
     "Париж",
     "Марсель",
     "Лион",
@@ -236,7 +142,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Бордо",
     "Лилль",
   ],
-  Италия: [
+  IT: [
     "Рим",
     "Милан",
     "Неаполь",
@@ -248,7 +154,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Бари",
     "Катания",
   ],
-  Германия: [
+  DE: [
     "Берлин",
     "Гамбург",
     "Мюнхен",
@@ -260,7 +166,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Эссен",
     "Лейпциг",
   ],
-  Испания: [
+  ES: [
     "Мадрид",
     "Барселона",
     "Валенсия",
@@ -272,7 +178,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Лас-Пальмас",
     "Бильбао",
   ],
-  Португалия: [
+  PT: [
     "Лиссабон",
     "Порту",
     "Амадора",
@@ -282,7 +188,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Фуншал",
     "Вила-Нова-де-Гайа",
   ],
-  Ирландия: [
+  IE: [
     "Дублин",
     "Корк",
     "Лимерик",
@@ -292,7 +198,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Данди",
     "Слайго",
   ],
-  Швейцария: [
+  CH: [
     "Цюрих",
     "Женева",
     "Базель",
@@ -302,7 +208,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Люцерн",
     "Санкт-Галлен",
   ],
-  Швеция: [
+  SE: [
     "Стокгольм",
     "Гётеборг",
     "Мальмё",
@@ -312,7 +218,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Линчёпинг",
     "Хельсингборг",
   ],
-  Киргизия: [
+  KG: [
     "Бишкек",
     "Ош",
     "Джалал-Абад",
@@ -322,7 +228,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Балыкчы",
     "Кара-Балта",
   ],
-  Таджикистан: [
+  TJ: [
     "Душанбе",
     "Худжанд",
     "Куляб",
@@ -332,7 +238,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Турсунзаде",
     "Исфара",
   ],
-  Узбекистан: [
+  UZ: [
     "Ташкент",
     "Самарканд",
     "Наманган",
@@ -342,7 +248,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Карши",
     "Коканд",
   ],
-  Туркменистан: [
+  TM: [
     "Ашхабад",
     "Туркменабад",
     "Дашогуз",
@@ -352,7 +258,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Атамурат",
     "Керки",
   ],
-  Литва: [
+  LT: [
     "Вильнюс",
     "Каунас",
     "Клайпеда",
@@ -362,7 +268,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Мариямполе",
     "Мажейкяй",
   ],
-  Латвия: [
+  LV: [
     "Рига",
     "Даугавпилс",
     "Лиепая",
@@ -372,7 +278,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
     "Резекне",
     "Валмиера",
   ],
-  Эстония: [
+  EE: [
     "Таллин",
     "Тарту",
     "Нарва",
@@ -384,55 +290,7 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
   ],
 };
 
-// Mapping between country names and ISO 3166-1 alpha-2 codes
-export const COUNTRY_TO_ISO: Record<string, string> = {
-  Россия: "RU",
-  Турция: "TR",
-  Армения: "AM",
-  Израиль: "IL",
-  Азербайджан: "AZ",
-  Казахстан: "KZ",
-  Беларусь: "BY",
-  Украина: "UA",
-  Индия: "IN",
-  Грузия: "GE",
-  Молдова: "MD",
-  США: "US",
-  Германия: "DE",
-  Польша: "PL",
-  Великобритания: "GB",
-  Франция: "FR",
-  Греция: "GR",
-  Италия: "IT",
-  Нидерланды: "NL",
-  Испания: "ES",
-  Литва: "LT",
-  Латвия: "LV",
-  Эстония: "EE",
-  Португалия: "PT",
-  Ирландия: "IE",
-  Швейцария: "CH",
-  Швеция: "SE",
-  Киргизия: "KG",
-  Таджикистан: "TJ",
-  Узбекистан: "UZ",
-  Туркменистан: "TM",
+// Get cities for a specific country by ISO code
+export const getCitiesForCountry = (countryIso: string): string[] => {
+  return CITIES_BY_COUNTRY_ISO[countryIso] || [];
 };
-
-// Reverse mapping from ISO codes to country names
-export const ISO_TO_COUNTRY: Record<string, string> = Object.fromEntries(
-  Object.entries(COUNTRY_TO_ISO).map(([country, iso]) => [iso, country])
-);
-
-export const PROFILE_STEPS = [
-  { id: 1, title: "Основная информация", description: "Имя и описание" },
-  {
-    id: 2,
-    title: "Местоположение",
-    description: "Ваше местоположение и клиенты",
-  },
-  { id: 3, title: "Услуги", description: "Тип и список услуг" },
-  { id: 4, title: "Фотографии", description: "Загрузите ваши фото" },
-  { id: 5, title: "Контакты", description: "Способы связи" },
-  { id: 6, title: "Цены", description: "Стоимость услуг" },
-] as const;
