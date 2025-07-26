@@ -43,6 +43,7 @@ export interface ProfileState {
   currentStep: number;
   completedSteps: Set<number>;
   isLoading: boolean;
+  draftId: string | null; // ID of the draft profile in the backend
 }
 
 // Countries for escort's location (limited selection)
