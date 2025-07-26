@@ -254,7 +254,6 @@ export function ContactStep() {
             contactInfo: {
               phoneCountryCode: phoneFormat.code,
               phoneNumber: localPhone,
-              ...(contactInfo.telegram && { telegram: contactInfo.telegram }),
               exposeTelegram: contactInfo.exposeTelegram,
               exposeWhatsApp: contactInfo.exposeWhatsApp,
             },
