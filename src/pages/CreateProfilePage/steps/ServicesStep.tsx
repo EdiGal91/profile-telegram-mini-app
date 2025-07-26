@@ -30,57 +30,55 @@ export function ServicesStep() {
   const patchProfile = usePatchProfile();
   const draftProfile = profiles.data?.find((p) => p.isDraft);
 
-  // тут будем хранить { [categoryKey]: string[] } — массив кодов опций
+  // selected: категория → массив кодов выбранных опций (для булевых — код категории)
   const [selected, setSelected] = useState<Record<string, string[]>>({});
 
-  // Инициализируем выбранные коды из draftProfile.servicesList
+  // Инициализируем selected из draftProfile.servicesList
   useEffect(() => {
     if (draftProfile?.servicesList?.length && services) {
       const parsed: Record<string, string[]> = {};
 
-      draftProfile.servicesList.forEach((item) => {
-        // 1) Если item — ключ категории (без опций)
+      for (const item of draftProfile.servicesList) {
+        // 1) булевая категория: если есть SERVICES[item]
         if (services[item]) {
-          parsed[item] = [];
-          return;
+          parsed[item] = [item];
+          continue;
         }
-
-        // 2) Если item — точный код опции
+        // 2) опция по коду
         let matched = false;
         for (const [catKey, cat] of Object.entries(services)) {
-          if (cat.options.some((o) => o.code === item)) {
+          const opt = cat.options.find((o) => o.code === item);
+          if (opt) {
             parsed[catKey] = [...(parsed[catKey] || []), item];
             matched = true;
             break;
           }
         }
-        if (matched) return;
-
-        // 3) Старые метки: ищем по label.ru или label.en
+        if (matched) continue;
+        // 3) старая метка: ищем по label
         for (const [catKey, cat] of Object.entries(services)) {
-          // категория без опций?
           if (!cat.options.length) {
             if (cat.label.ru === item || cat.label.en === item) {
-              parsed[catKey] = [];
+              parsed[catKey] = [catKey];
               break;
             }
           } else {
-            const opt = cat.options.find(
+            const o = cat.options.find(
               (o) => o.label.ru === item || o.label.en === item
             );
-            if (opt) {
-              parsed[catKey] = [...(parsed[catKey] || []), opt.code];
+            if (o) {
+              parsed[catKey] = [...(parsed[catKey] || []), o.code];
               break;
             }
           }
         }
-      });
+      }
 
       setSelected(parsed);
     }
   }, [draftProfile, services]);
 
-  // Тогглим выбор
+  // Переключение галочки
   const toggleOption = (catKey: string, optCode?: string) => {
     setSelected((prev) => {
       const curr = prev[catKey] || [];
@@ -88,15 +86,13 @@ export function ServicesStep() {
       let updated: string[];
 
       if (!cat.options.length) {
-        // булевая категория
-        updated = curr.length ? [] : [""];
+        // булевая: ставим/снимаем код категории
+        updated = curr.length ? [] : [catKey];
       } else if (cat.multiSelect) {
-        // множественный выбор внутри категории
         updated = curr.includes(optCode!)
           ? curr.filter((c) => c !== optCode)
           : [...curr, optCode!];
       } else {
-        // одиночный выбор
         updated = curr[0] === optCode ? [] : [optCode!];
       }
 
@@ -104,26 +100,26 @@ export function ServicesStep() {
     });
   };
 
-  // собираем массив КОДОВ для отправки
+  // Собираем flat-массив кодов для запроса
   const getCodes = (): string[] => {
     if (!services) return [];
     const codes: string[] = [];
-    Object.entries(selected).forEach(([catKey, arr]) => {
+    for (const [catKey, arr] of Object.entries(selected)) {
       const cat = services[catKey];
-      if (!cat) return;
+      if (!cat) continue;
       if (!cat.options.length) {
         if (arr.length) codes.push(catKey);
       } else {
-        arr.forEach((c) => codes.push(c));
+        codes.push(...arr);
       }
-    });
+    }
     return codes;
   };
 
   const codes = getCodes();
   const isValid = codes.length > 0;
 
-  // Перейти дальше
+  // Вперёд
   const handleNext = async () => {
     if (!draftProfile || !isValid) return;
     updateData({ servicesList: codes });
@@ -142,7 +138,7 @@ export function ServicesStep() {
   // Назад
   const handlePrev = () => setStep(2);
 
-  // Загрузка / ошибка
+  // Loading / Error
   if (isLoading) {
     return (
       <List>
@@ -174,7 +170,7 @@ export function ServicesStep() {
     );
   }
 
-  // Основной рендер
+  // Основной UI
   return (
     <List>
       {services &&
