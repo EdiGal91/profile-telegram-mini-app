@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Section, Button, List } from "@telegram-apps/telegram-ui";
+import { Section, Button, List, Spinner } from "@telegram-apps/telegram-ui";
 import { useSignal, initData } from "@telegram-apps/sdk-react";
 import { useProfile } from "@/context/ProfileContext";
 import { useProfilesContext } from "@/context/ProfilesContext";
+import { usePatchProfile } from "@/hooks/useProfiles";
 import { ISO_TO_COUNTRY } from "@/types/profile";
 
 // Country-specific mobile phone formats and validation
@@ -52,6 +53,7 @@ const PHONE_FORMATS = {
 export function ContactStep() {
   const { state, updateData, completeStep, setStep } = useProfile();
   const { profiles } = useProfilesContext();
+  const patchProfile = usePatchProfile();
 
   // Get user's country for phone formatting
   const userCountryISO = state.data.location?.country;
@@ -65,11 +67,7 @@ export function ContactStep() {
 
   // Store just the local phone number (without country code)
   const [localPhone, setLocalPhone] = useState(() => {
-    const savedPhone = state.data.contactInfo?.phone || "";
-    // If phone starts with country code, extract local part
-    if (savedPhone.startsWith(phoneFormat.code)) {
-      return savedPhone.slice(phoneFormat.code.length).replace(/^\s+/, "");
-    }
+    const savedPhone = state.data.contactInfo?.phoneNumber || "";
     return savedPhone;
   });
 
@@ -81,6 +79,7 @@ export function ContactStep() {
       exposeWhatsApp: false,
     }
   );
+  const [isLoading, setIsLoading] = useState(false);
   const initDataState = useSignal(initData.state);
 
   // Get the current draft profile
@@ -88,35 +87,22 @@ export function ContactStep() {
 
   // Handle country changes and update phone format accordingly
   useEffect(() => {
-    if (draftProfile?.contactInfo?.phone && localPhone) {
-      const savedPhone = draftProfile.contactInfo.phone;
-      // Check if the saved phone uses a different country code than current format
-      const currentCountryCode = phoneFormat.code;
-      const savedCountryCode = savedPhone.split(" ")[0];
-
-      if (savedCountryCode !== currentCountryCode) {
-        // Extract the local part from the saved phone
-        const localPart = savedPhone
-          .slice(savedCountryCode.length)
-          .replace(/^\s+/, "");
-        setLocalPhone(localPart);
-      }
+    if (draftProfile?.contactInfo?.phoneNumber && localPhone) {
+      // If we have a saved phone number, use it
+      setLocalPhone(draftProfile.contactInfo.phoneNumber);
     }
-  }, [userCountryName, phoneFormat.code, draftProfile?.contactInfo?.phone]);
+  }, [
+    userCountryName,
+    phoneFormat.code,
+    draftProfile?.contactInfo?.phoneNumber,
+  ]);
 
   // Sync local state with draft profile data when it becomes available
   useEffect(() => {
     if (draftProfile?.contactInfo) {
       // Sync phone data
-      if (draftProfile.contactInfo.phone && !localPhone) {
-        const savedPhone = draftProfile.contactInfo.phone;
-        if (savedPhone.startsWith(phoneFormat.code)) {
-          setLocalPhone(
-            savedPhone.slice(phoneFormat.code.length).replace(/^\s+/, "")
-          );
-        } else {
-          setLocalPhone(savedPhone);
-        }
+      if (draftProfile.contactInfo.phoneNumber && !localPhone) {
+        setLocalPhone(draftProfile.contactInfo.phoneNumber);
       }
 
       // Sync other contact info
@@ -158,7 +144,8 @@ export function ContactStep() {
     if (draftProfile?.contactInfo) {
       const updates: Partial<{
         contactInfo: {
-          phone?: string;
+          phoneCountryCode?: string;
+          phoneNumber?: string;
           telegram?: string;
           exposeTelegram?: boolean;
           exposeWhatsApp?: boolean;
@@ -166,12 +153,23 @@ export function ContactStep() {
       }> = {};
 
       if (
-        draftProfile.contactInfo.phone &&
-        draftProfile.contactInfo.phone !== state.data.contactInfo?.phone
+        draftProfile.contactInfo.phoneCountryCode &&
+        draftProfile.contactInfo.phoneCountryCode !==
+          state.data.contactInfo?.phoneCountryCode
       ) {
         updates.contactInfo = {
           ...state.data.contactInfo,
-          phone: draftProfile.contactInfo.phone,
+          phoneCountryCode: draftProfile.contactInfo.phoneCountryCode,
+        };
+      }
+      if (
+        draftProfile.contactInfo.phoneNumber &&
+        draftProfile.contactInfo.phoneNumber !==
+          state.data.contactInfo?.phoneNumber
+      ) {
+        updates.contactInfo = {
+          ...state.data.contactInfo,
+          phoneNumber: draftProfile.contactInfo.phoneNumber,
         };
       }
       if (
@@ -235,37 +233,65 @@ export function ContactStep() {
     setContactInfo((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleNext = () => {
-    if (isValid) {
-      const fullPhone = phoneFormat.code + " " + localPhone;
-      updateData({
-        contactInfo: {
-          ...contactInfo,
-          phone: fullPhone,
-        },
-      });
-      completeStep(5);
-      setStep(6);
+  const handleNext = async () => {
+    if (isValid && draftProfile) {
+      try {
+        setIsLoading(true);
+
+        const fullPhone = phoneFormat.code + " " + localPhone;
+
+        // Update local state first
+        updateData({
+          contactInfo: {
+            ...contactInfo,
+            phoneCountryCode: phoneFormat.code,
+            phoneNumber: localPhone,
+          },
+        });
+
+        // Send PATCH request to update the profile
+        await patchProfile.mutateAsync({
+          id: draftProfile._id,
+          profile: {
+            contactInfo: {
+              phoneCountryCode: phoneFormat.code,
+              phoneNumber: localPhone,
+              ...(contactInfo.telegram && { telegram: contactInfo.telegram }),
+              exposeTelegram: contactInfo.exposeTelegram,
+              exposeWhatsApp: contactInfo.exposeWhatsApp,
+            },
+          },
+        });
+
+        // Complete step and move to next
+        completeStep(5);
+        setStep(6);
+      } catch (error) {
+        console.error("Failed to update profile:", error);
+        // You might want to show an error message to the user here
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
   const handlePrevious = () => {
-    const fullPhone = localPhone ? phoneFormat.code + " " + localPhone : "";
     updateData({
       contactInfo: {
         ...contactInfo,
-        phone: fullPhone,
+        phoneCountryCode: phoneFormat.code,
+        phoneNumber: localPhone,
       },
     });
     setStep(4);
   };
 
   const handleSave = () => {
-    const fullPhone = localPhone ? phoneFormat.code + " " + localPhone : "";
     updateData({
       contactInfo: {
         ...contactInfo,
-        phone: fullPhone,
+        phoneCountryCode: phoneFormat.code,
+        phoneNumber: localPhone,
       },
     });
     if (isValid) {
@@ -490,8 +516,22 @@ export function ContactStep() {
           <Button size="l" mode="outline" stretched onClick={handlePrevious}>
             Назад
           </Button>
-          <Button size="l" stretched disabled={!isValid} onClick={handleNext}>
-            Далее: Цены
+          <Button
+            size="l"
+            stretched
+            disabled={!isValid || isLoading}
+            onClick={handleNext}
+          >
+            {isLoading ? (
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
+                <Spinner size="s" />
+                Сохранение...
+              </div>
+            ) : (
+              "Далее: Цены"
+            )}
           </Button>
         </div>
       </Section>

@@ -20,7 +20,8 @@ export interface ProfileData {
 
   // Step 5: Contact
   contactInfo: {
-    phone?: string;
+    phoneCountryCode?: string;
+    phoneNumber?: string;
     telegram?: string;
     email?: string;
     exposeTelegram?: boolean;

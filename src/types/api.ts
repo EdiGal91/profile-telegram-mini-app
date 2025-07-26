@@ -17,7 +17,8 @@ export interface ApiProfile {
   servicesList: string[];
   photos: string[]; // URLs to uploaded photos
   contactInfo: {
-    phone?: string;
+    phoneCountryCode?: string;
+    phoneNumber?: string;
     telegram?: string;
     exposeTelegram?: boolean;
     exposeWhatsApp?: boolean;
