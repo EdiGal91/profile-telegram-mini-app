@@ -28,7 +28,6 @@ export const IndexPage: FC = () => {
 
   return (
     <Page back={false}>
-      <h1>VITE_BACKEND_URL: {import.meta.env.VITE_BACKEND_URL || "NOT SET"}</h1>
       <List>
         <Section header="Добро пожаловать, здесь вы можете управлять своей анкетой">
           {hasDraft ? (
