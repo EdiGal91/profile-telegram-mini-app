@@ -15,9 +15,12 @@
     "predeploy": "npm run build"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.83.0",
+    "@tanstack/react-query-devtools": "^5.83.0",
     "@telegram-apps/sdk-react": "^3.3.1",
     "@telegram-apps/telegram-ui": "^2.1.8",
     "@tonconnect/ui-react": "^2.1.0",
+    "axios": "^1.11.0",
     "eruda": "^3.4.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -25,6 +28,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.23.0",
+    "@tanstack/eslint-plugin-query": "^5.81.2",
     "@types/node": "^20.12.11",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",

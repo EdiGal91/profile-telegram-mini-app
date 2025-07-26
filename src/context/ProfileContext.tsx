@@ -139,9 +139,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       case 5: // Contact
         return !!(
           state.data.contactInfo?.phone ||
-          state.data.contactInfo?.telegram ||
-          state.data.contactInfo?.email
-        );
+          state.data.contactInfo?.telegram
+        ); // Email removed, telegram auto-collected
       case 6: // Pricing
         return true; // Pricing is optional
       default:

@@ -1,0 +1,98 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSignal, initData } from '@telegram-apps/sdk-react';
+import { 
+  fetchProfiles, 
+  createProfile, 
+  updateProfile, 
+  deleteProfile,
+  uploadProfilePhotos 
+} from '@/services/profileService';
+import { ApiProfile, ProfilesResponse } from '@/types/api';
+
+// Query keys
+export const profileKeys = {
+  all: ['profiles'] as const,
+  byTelegramId: (telegramId: string) => [...profileKeys.all, 'byTelegramId', telegramId] as const,
+};
+
+// Custom hook to get current telegram ID
+export const useTelegramId = () => {
+  const initDataState = useSignal(initData.state);
+  return initDataState?.user?.id?.toString() || '';
+};
+
+// Hook to fetch user's profiles
+export const useProfiles = () => {
+  const telegramId = useTelegramId();
+  
+  return useQuery({
+    queryKey: profileKeys.byTelegramId(telegramId),
+    queryFn: () => fetchProfiles(telegramId),
+    enabled: !!telegramId, // Only run if we have a telegram ID
+    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes (was cacheTime in v4)
+  });
+};
+
+// Hook to create a new profile
+export const useCreateProfile = () => {
+  const queryClient = useQueryClient();
+  const telegramId = useTelegramId();
+
+  return useMutation({
+    mutationFn: createProfile,
+    onSuccess: () => {
+      // Invalidate and refetch profiles
+      queryClient.invalidateQueries({
+        queryKey: profileKeys.byTelegramId(telegramId)
+      });
+    },
+  });
+};
+
+// Hook to update a profile
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient();
+  const telegramId = useTelegramId();
+
+  return useMutation({
+    mutationFn: ({ id, profile }: { id: string; profile: Partial<ApiProfile> }) =>
+      updateProfile(id, profile),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: profileKeys.byTelegramId(telegramId)
+      });
+    },
+  });
+};
+
+// Hook to delete a profile
+export const useDeleteProfile = () => {
+  const queryClient = useQueryClient();
+  const telegramId = useTelegramId();
+
+  return useMutation({
+    mutationFn: deleteProfile,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: profileKeys.byTelegramId(telegramId)
+      });
+    },
+  });
+};
+
+// Hook to upload photos
+export const useUploadPhotos = () => {
+  const queryClient = useQueryClient();
+  const telegramId = useTelegramId();
+
+  return useMutation({
+    mutationFn: ({ profileId, photos }: { profileId: string; photos: File[] }) =>
+      uploadProfilePhotos(profileId, photos),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: profileKeys.byTelegramId(telegramId)
+      });
+    },
+  });
+}; 
