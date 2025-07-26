@@ -1,4 +1,4 @@
-import { COUNTRY_TO_ISO, ISO_TO_COUNTRY } from "@/types/profile";
+import { COUNTRY_TO_ISO } from "@/types/profile";
 
 // Country names in different languages
 export const COUNTRY_NAMES: Record<string, Record<string, string>> = {

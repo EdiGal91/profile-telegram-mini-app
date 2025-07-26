@@ -12,7 +12,6 @@ import { useProfile } from "@/context/ProfileContext";
 import { useProfilesContext } from "@/context/ProfilesContext";
 import { patchProfile } from "@/services/profileService";
 import {
-  getCountryName,
   getCountriesForLanguage,
   getEscortLocationCountries,
   validateCountryMappings,

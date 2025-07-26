@@ -106,8 +106,12 @@ export const IndexPage: FC = () => {
                 .map((profile) => (
                   <Cell
                     key={profile._id}
-                    subtitle={`${profile.location.city}, ${
-                      profile.location.country
+                    subtitle={`${
+                      profile.location?.city || profile.city || "Не указан"
+                    }, ${
+                      profile.location?.country ||
+                      profile.country ||
+                      "Не указан"
                     } • ${profile.isActive ? "Активна" : "Неактивна"}`}
                   >
                     {profile.name}
