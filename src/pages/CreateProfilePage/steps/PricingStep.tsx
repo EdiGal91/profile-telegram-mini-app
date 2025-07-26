@@ -8,6 +8,7 @@ import {
   Text,
 } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
+import { useProfilesContext } from "@/context/ProfilesContext";
 import { useNavigate } from "react-router-dom";
 
 // Available time durations
@@ -41,6 +42,7 @@ const COUNTRY_CURRENCIES = {
 export function PricingStep() {
   const { state, updateData, completeStep, saveProgress, setStep } =
     useProfile();
+  const { profiles } = useProfilesContext();
   const navigate = useNavigate();
 
   // Get user's country to determine available currencies
@@ -62,6 +64,27 @@ export function PricingStep() {
       rates: {},
     }
   );
+
+  // Get the current draft profile
+  const draftProfile = profiles.data?.find((profile) => profile.isDraft);
+
+  // Sync local state with draft profile data when it becomes available
+  useEffect(() => {
+    if (draftProfile?.pricing && !state.data.pricing) {
+      setPricing(draftProfile.pricing);
+    }
+  }, [draftProfile, state.data.pricing]);
+
+  // Sync ProfileContext state with draft profile data
+  useEffect(() => {
+    if (
+      draftProfile?.pricing &&
+      JSON.stringify(draftProfile.pricing) !==
+        JSON.stringify(state.data.pricing)
+    ) {
+      updateData({ pricing: draftProfile.pricing });
+    }
+  }, [draftProfile, state.data.pricing, updateData]);
 
   // Pricing is optional - always valid
   const isValid = true;

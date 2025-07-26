@@ -1,20 +1,11 @@
-import {
-  createContext,
-  useContext,
-  useReducer,
-  ReactNode,
-  useEffect,
-} from "react";
+import { createContext, useContext, useReducer, ReactNode } from "react";
 import { ProfileData, ProfileState } from "@/types/profile";
 
 type ProfileAction =
   | { type: "SET_STEP"; step: number }
   | { type: "SET_DATA"; data: Partial<ProfileData> }
   | { type: "COMPLETE_STEP"; step: number }
-  | { type: "SET_LOADING"; loading: boolean }
-  | { type: "LOAD_SAVED_DATA"; data: ProfileState };
-
-const STORAGE_KEY = "profile_draft";
+  | { type: "SET_LOADING"; loading: boolean };
 
 const initialState: ProfileState = {
   data: {},
@@ -39,13 +30,6 @@ function profileReducer(
       };
     case "SET_LOADING":
       return { ...state, isLoading: action.loading };
-    case "LOAD_SAVED_DATA":
-      return {
-        ...initialState,
-        ...action.data,
-        completedSteps: new Set(action.data.completedSteps || []),
-        data: action.data.data || {},
-      };
     default:
       return state;
   }
@@ -64,37 +48,7 @@ interface ProfileContextType {
 const ProfileContext = createContext<ProfileContextType | null>(null);
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
-  // Initialize with saved data
-  const [state, dispatch] = useReducer(
-    profileReducer,
-    initialState,
-    (initial) => {
-      const savedData = localStorage.getItem(STORAGE_KEY);
-      if (savedData) {
-        try {
-          const parsed = JSON.parse(savedData);
-          return {
-            ...initial,
-            ...parsed,
-            completedSteps: new Set(parsed.completedSteps || []),
-            data: parsed.data || {},
-          };
-        } catch (error) {
-          console.error("Failed to load saved profile data:", error);
-        }
-      }
-      return initial;
-    }
-  );
-
-  // Save data whenever state changes (but not on initial load)
-  useEffect(() => {
-    const dataToSave = {
-      ...state,
-      completedSteps: Array.from(state.completedSteps),
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-  }, [state]);
+  const [state, dispatch] = useReducer(profileReducer, initialState);
 
   const setStep = (step: number) => {
     dispatch({ type: "SET_STEP", step });

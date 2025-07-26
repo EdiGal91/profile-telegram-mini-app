@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Section, Button, List } from "@telegram-apps/telegram-ui";
 import { useSignal, initData } from "@telegram-apps/sdk-react";
 import { useProfile } from "@/context/ProfileContext";
+import { useProfilesContext } from "@/context/ProfilesContext";
 
 // Country-specific mobile phone formats and validation
 const PHONE_FORMATS = {
@@ -49,6 +50,7 @@ const PHONE_FORMATS = {
 
 export function ContactStep() {
   const { state, updateData, completeStep, setStep } = useProfile();
+  const { profiles } = useProfilesContext();
 
   // Get user's country for phone formatting
   const userCountry = state.data.location?.country;
@@ -76,6 +78,109 @@ export function ContactStep() {
     }
   );
   const initDataState = useSignal(initData.state);
+
+  // Get the current draft profile
+  const draftProfile = profiles.data?.find((profile) => profile.isDraft);
+
+  // Sync local state with draft profile data when it becomes available
+  useEffect(() => {
+    if (draftProfile?.contactInfo) {
+      // Sync phone data
+      if (draftProfile.contactInfo.phone && !localPhone) {
+        const savedPhone = draftProfile.contactInfo.phone;
+        if (savedPhone.startsWith(phoneFormat.code)) {
+          setLocalPhone(
+            savedPhone.slice(phoneFormat.code.length).replace(/^\s+/, "")
+          );
+        } else {
+          setLocalPhone(savedPhone);
+        }
+      }
+
+      // Sync other contact info
+      if (draftProfile.contactInfo.telegram && !contactInfo.telegram) {
+        setContactInfo((prev) => ({
+          ...prev,
+          telegram: draftProfile.contactInfo.telegram,
+        }));
+      }
+      if (
+        draftProfile.contactInfo.exposeTelegram !== undefined &&
+        contactInfo.exposeTelegram === false
+      ) {
+        setContactInfo((prev) => ({
+          ...prev,
+          exposeTelegram: draftProfile.contactInfo.exposeTelegram,
+        }));
+      }
+      if (
+        draftProfile.contactInfo.exposeWhatsApp !== undefined &&
+        contactInfo.exposeWhatsApp === false
+      ) {
+        setContactInfo((prev) => ({
+          ...prev,
+          exposeWhatsApp: draftProfile.contactInfo.exposeWhatsApp,
+        }));
+      }
+    }
+  }, [draftProfile, localPhone, contactInfo, phoneFormat.code]);
+
+  // Sync ProfileContext state with draft profile data
+  useEffect(() => {
+    if (draftProfile?.contactInfo) {
+      const updates: Partial<{
+        contactInfo: {
+          phone?: string;
+          telegram?: string;
+          exposeTelegram?: boolean;
+          exposeWhatsApp?: boolean;
+        };
+      }> = {};
+
+      if (
+        draftProfile.contactInfo.phone &&
+        draftProfile.contactInfo.phone !== state.data.contactInfo?.phone
+      ) {
+        updates.contactInfo = {
+          ...state.data.contactInfo,
+          phone: draftProfile.contactInfo.phone,
+        };
+      }
+      if (
+        draftProfile.contactInfo.telegram &&
+        draftProfile.contactInfo.telegram !== state.data.contactInfo?.telegram
+      ) {
+        updates.contactInfo = {
+          ...state.data.contactInfo,
+          telegram: draftProfile.contactInfo.telegram,
+        };
+      }
+      if (
+        draftProfile.contactInfo.exposeTelegram !== undefined &&
+        draftProfile.contactInfo.exposeTelegram !==
+          state.data.contactInfo?.exposeTelegram
+      ) {
+        updates.contactInfo = {
+          ...state.data.contactInfo,
+          exposeTelegram: draftProfile.contactInfo.exposeTelegram,
+        };
+      }
+      if (
+        draftProfile.contactInfo.exposeWhatsApp !== undefined &&
+        draftProfile.contactInfo.exposeWhatsApp !==
+          state.data.contactInfo?.exposeWhatsApp
+      ) {
+        updates.contactInfo = {
+          ...state.data.contactInfo,
+          exposeWhatsApp: draftProfile.contactInfo.exposeWhatsApp,
+        };
+      }
+
+      if (Object.keys(updates).length > 0) {
+        updateData(updates);
+      }
+    }
+  }, [draftProfile, state.data.contactInfo, updateData]);
 
   // Validate phone format based on country
   const cleanPhone = localPhone.replace(/\D/g, ""); // Remove non-digits for validation

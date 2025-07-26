@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Section, Button, List, Cell, Text } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
+import { useProfilesContext } from "@/context/ProfilesContext";
 
 interface PhotoData {
   url: string;
@@ -10,6 +11,7 @@ interface PhotoData {
 
 export function PhotosStep() {
   const { state, updateData, completeStep, setStep } = useProfile();
+  const { profiles } = useProfilesContext();
   const [photos, setPhotos] = useState<PhotoData[]>(() => {
     // Convert existing base64 URLs to photo data format
     return (state.data.photos || []).map((url) => ({
@@ -17,6 +19,30 @@ export function PhotosStep() {
       isObjectURL: false,
     }));
   });
+
+  // Get the current draft profile
+  const draftProfile = profiles.data?.find((profile) => profile.isDraft);
+
+  // Sync local state with draft profile data when it becomes available
+  useEffect(() => {
+    if (draftProfile?.photos?.length && photos.length === 0) {
+      const draftPhotos = draftProfile.photos.map((url) => ({
+        url,
+        isObjectURL: false,
+      }));
+      setPhotos(draftPhotos);
+    }
+  }, [draftProfile, photos]);
+
+  // Sync ProfileContext state with draft profile data
+  useEffect(() => {
+    if (
+      draftProfile?.photos?.length &&
+      JSON.stringify(draftProfile.photos) !== JSON.stringify(state.data.photos)
+    ) {
+      updateData({ photos: draftProfile.photos });
+    }
+  }, [draftProfile, state.data.photos, updateData]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const objectURLsRef = useRef<string[]>([]);

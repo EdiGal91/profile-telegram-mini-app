@@ -25,6 +25,40 @@ export function BasicInfoStep() {
   // Get the current draft profile
   const draftProfile = profiles.data?.find((profile) => profile.isDraft);
 
+  // Sync local state with draft profile data when it becomes available
+  useEffect(() => {
+    if (draftProfile && (!name || !description)) {
+      // Only update if local state is empty and draft has data
+      if (draftProfile.name && !name) {
+        setName(draftProfile.name);
+      }
+      if (draftProfile.description && !description) {
+        setDescription(draftProfile.description);
+      }
+    }
+  }, [draftProfile, name, description]);
+
+  // Sync ProfileContext state with draft profile data
+  useEffect(() => {
+    if (draftProfile) {
+      const updates: Partial<{ name: string; description: string }> = {};
+
+      if (draftProfile.name && draftProfile.name !== state.data.name) {
+        updates.name = draftProfile.name;
+      }
+      if (
+        draftProfile.description &&
+        draftProfile.description !== state.data.description
+      ) {
+        updates.description = draftProfile.description;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        updateData(updates);
+      }
+    }
+  }, [draftProfile, state.data.name, state.data.description, updateData]);
+
   const handleNext = async () => {
     if (isValid && draftProfile) {
       try {

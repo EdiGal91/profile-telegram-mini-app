@@ -7,6 +7,7 @@ import {
   Checkbox,
 } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
+import { useProfilesContext } from "@/context/ProfilesContext";
 
 const PREDEFINED_SERVICES = [
   "Классический секс",
@@ -25,9 +26,31 @@ const PREDEFINED_SERVICES = [
 
 export function ServicesStep() {
   const { state, updateData, completeStep, setStep } = useProfile();
+  const { profiles } = useProfilesContext();
   const [servicesList, setServicesList] = useState<string[]>(
     state.data.servicesList || []
   );
+
+  // Get the current draft profile
+  const draftProfile = profiles.data?.find((profile) => profile.isDraft);
+
+  // Sync local state with draft profile data when it becomes available
+  useEffect(() => {
+    if (draftProfile?.servicesList?.length && servicesList.length === 0) {
+      setServicesList(draftProfile.servicesList);
+    }
+  }, [draftProfile, servicesList]);
+
+  // Sync ProfileContext state with draft profile data
+  useEffect(() => {
+    if (
+      draftProfile?.servicesList?.length &&
+      JSON.stringify(draftProfile.servicesList) !==
+        JSON.stringify(state.data.servicesList)
+    ) {
+      updateData({ servicesList: draftProfile.servicesList });
+    }
+  }, [draftProfile, state.data.servicesList, updateData]);
 
   const isValid = servicesList.length > 0;
 
