@@ -1,30 +1,31 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSignal, initData } from '@telegram-apps/sdk-react';
-import { 
-  fetchProfiles, 
-  createProfile, 
-  updateProfile, 
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSignal, initData } from "@telegram-apps/sdk-react";
+import {
+  fetchProfiles,
+  createProfile,
+  updateProfile,
   deleteProfile,
-  uploadProfilePhotos 
-} from '@/services/profileService';
-import { ApiProfile, ProfilesResponse } from '@/types/api';
+  uploadProfilePhotos,
+} from "@/services/profileService";
+import { ApiProfile } from "@/types/api";
 
 // Query keys
 export const profileKeys = {
-  all: ['profiles'] as const,
-  byTelegramId: (telegramId: string) => [...profileKeys.all, 'byTelegramId', telegramId] as const,
+  all: ["profiles"] as const,
+  byTelegramId: (telegramId: string) =>
+    [...profileKeys.all, "byTelegramId", telegramId] as const,
 };
 
 // Custom hook to get current telegram ID
 export const useTelegramId = () => {
   const initDataState = useSignal(initData.state);
-  return initDataState?.user?.id?.toString() || '';
+  return initDataState?.user?.id?.toString() || "";
 };
 
 // Hook to fetch user's profiles
 export const useProfiles = () => {
   const telegramId = useTelegramId();
-  
+
   return useQuery({
     queryKey: profileKeys.byTelegramId(telegramId),
     queryFn: () => fetchProfiles(telegramId),
@@ -44,7 +45,7 @@ export const useCreateProfile = () => {
     onSuccess: () => {
       // Invalidate and refetch profiles
       queryClient.invalidateQueries({
-        queryKey: profileKeys.byTelegramId(telegramId)
+        queryKey: profileKeys.byTelegramId(telegramId),
       });
     },
   });
@@ -56,11 +57,16 @@ export const useUpdateProfile = () => {
   const telegramId = useTelegramId();
 
   return useMutation({
-    mutationFn: ({ id, profile }: { id: string; profile: Partial<ApiProfile> }) =>
-      updateProfile(id, profile),
+    mutationFn: ({
+      id,
+      profile,
+    }: {
+      id: string;
+      profile: Partial<ApiProfile>;
+    }) => updateProfile(id, profile),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: profileKeys.byTelegramId(telegramId)
+        queryKey: profileKeys.byTelegramId(telegramId),
       });
     },
   });
@@ -75,7 +81,7 @@ export const useDeleteProfile = () => {
     mutationFn: deleteProfile,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: profileKeys.byTelegramId(telegramId)
+        queryKey: profileKeys.byTelegramId(telegramId),
       });
     },
   });
@@ -87,12 +93,17 @@ export const useUploadPhotos = () => {
   const telegramId = useTelegramId();
 
   return useMutation({
-    mutationFn: ({ profileId, photos }: { profileId: string; photos: File[] }) =>
-      uploadProfilePhotos(profileId, photos),
+    mutationFn: ({
+      profileId,
+      photos,
+    }: {
+      profileId: string;
+      photos: File[];
+    }) => uploadProfilePhotos(profileId, photos),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: profileKeys.byTelegramId(telegramId)
+        queryKey: profileKeys.byTelegramId(telegramId),
       });
     },
   });
-}; 
+};

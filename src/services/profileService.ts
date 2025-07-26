@@ -39,7 +39,7 @@ export const uploadProfilePhotos = async (
   photos: File[]
 ): Promise<string[]> => {
   const formData = new FormData();
-  photos.forEach((photo, index) => {
+  photos.forEach((photo) => {
     formData.append(`photos`, photo);
   });
 
