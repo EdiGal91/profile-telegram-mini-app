@@ -23,6 +23,7 @@ export interface ApiProfile {
     outcall?: string;
   };
   isActive: boolean;
+  isDraft: boolean; // Indicates if this is a draft profile
   createdAt: string;
   updatedAt: string;
 }

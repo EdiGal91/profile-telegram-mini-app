@@ -8,15 +8,31 @@ import { useProfilesContext } from "@/context/ProfilesContext.tsx";
 export const IndexPage: FC = () => {
   const { profiles, telegramId } = useProfilesContext();
 
+  // Check if user has a draft profile
+  const draftProfile = profiles.data?.find((profile) => profile.isDraft);
+  const hasDraft = !!draftProfile;
+
   return (
     <Page back={false}>
       <List>
         <Section header="Добро пожаловать, здесь вы можете управлять своей анкетой">
-          <Link to="/profile-create">
-            <Cell subtitle="Создать черновик  своей анкеты">
-              Создать анкету
-            </Cell>
-          </Link>
+          {hasDraft ? (
+            <Link to="/profile-create">
+              <Cell
+                subtitle={`Продолжить черновик: ${
+                  draftProfile?.name || "Без названия"
+                }`}
+              >
+                Продолжить анкету
+              </Cell>
+            </Link>
+          ) : (
+            <Link to="/profile-create">
+              <Cell subtitle="Создать черновик своей анкеты">
+                Создать анкету
+              </Cell>
+            </Link>
+          )}
         </Section>
 
         {/* Debug information */}
@@ -41,7 +57,15 @@ export const IndexPage: FC = () => {
             </Cell>
           )}
           {profiles.data && (
-            <Cell subtitle={`Найдено: ${profiles.data.length} анкет`}>
+            <Cell
+              subtitle={`Найдено: ${
+                profiles.data.filter((p) => !p.isDraft).length
+              } анкет${
+                profiles.data.filter((p) => p.isDraft).length > 0
+                  ? ` + 1 черновик`
+                  : ""
+              }`}
+            >
               Ваши анкеты
             </Cell>
           )}
@@ -57,21 +81,24 @@ export const IndexPage: FC = () => {
           )}
         </Section>
 
-        {/* Show existing profiles if any */}
-        {profiles.data && profiles.data.length > 0 && (
-          <Section header="Ваши анкеты">
-            {profiles.data.map((profile) => (
-              <Cell
-                key={profile.id}
-                subtitle={`${profile.location.city}, ${
-                  profile.location.country
-                } • ${profile.isActive ? "Активна" : "Неактивна"}`}
-              >
-                {profile.name}
-              </Cell>
-            ))}
-          </Section>
-        )}
+        {/* Show only completed profiles */}
+        {profiles.data &&
+          profiles.data.filter((profile) => !profile.isDraft).length > 0 && (
+            <Section header="Ваши анкеты">
+              {profiles.data
+                .filter((profile) => !profile.isDraft)
+                .map((profile) => (
+                  <Cell
+                    key={profile.id}
+                    subtitle={`${profile.location.city}, ${
+                      profile.location.country
+                    } • ${profile.isActive ? "Активна" : "Неактивна"}`}
+                  >
+                    {profile.name}
+                  </Cell>
+                ))}
+            </Section>
+          )}
       </List>
     </Page>
   );
