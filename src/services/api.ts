@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Create axios instance with base configuration
 export const api = axios.create({
-  baseURL: "https://rnuvn-37-232-6-143.a.free.pinggy.link",
+  baseURL: "https://escore-i6sd.onrender.com",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
