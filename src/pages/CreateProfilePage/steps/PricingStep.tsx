@@ -9,6 +9,7 @@ import {
 } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
 import { useNavigate } from "react-router-dom";
+import { ISO_TO_COUNTRY } from "@/types/profile";
 
 // Available time durations
 const TIME_DURATIONS = [
@@ -44,10 +45,13 @@ export function PricingStep() {
   const navigate = useNavigate();
 
   // Get user's country to determine available currencies
-  const userCountry = state.data.location?.country;
+  const userCountryISO = state.data.location?.country;
+  const userCountryName = userCountryISO
+    ? ISO_TO_COUNTRY[userCountryISO]
+    : null;
   const availableCurrencies =
-    userCountry && userCountry in COUNTRY_CURRENCIES
-      ? COUNTRY_CURRENCIES[userCountry as keyof typeof COUNTRY_CURRENCIES]
+    userCountryName && userCountryName in COUNTRY_CURRENCIES
+      ? COUNTRY_CURRENCIES[userCountryName as keyof typeof COUNTRY_CURRENCIES]
       : COUNTRY_CURRENCIES["Россия"]; // Default to Russia currencies
 
   // Get currency symbol for display

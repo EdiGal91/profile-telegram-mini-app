@@ -3,6 +3,7 @@ import { Section, Button, List } from "@telegram-apps/telegram-ui";
 import { useSignal, initData } from "@telegram-apps/sdk-react";
 import { useProfile } from "@/context/ProfileContext";
 import { useProfilesContext } from "@/context/ProfilesContext";
+import { ISO_TO_COUNTRY } from "@/types/profile";
 
 // Country-specific mobile phone formats and validation
 const PHONE_FORMATS = {
@@ -53,10 +54,13 @@ export function ContactStep() {
   const { profiles } = useProfilesContext();
 
   // Get user's country for phone formatting
-  const userCountry = state.data.location?.country;
+  const userCountryISO = state.data.location?.country;
+  const userCountryName = userCountryISO
+    ? ISO_TO_COUNTRY[userCountryISO]
+    : null;
   const phoneFormat =
-    userCountry && userCountry in PHONE_FORMATS
-      ? PHONE_FORMATS[userCountry as keyof typeof PHONE_FORMATS]
+    userCountryName && userCountryName in PHONE_FORMATS
+      ? PHONE_FORMATS[userCountryName as keyof typeof PHONE_FORMATS]
       : PHONE_FORMATS["Россия"]; // Default to Russia format
 
   // Store just the local phone number (without country code)
@@ -81,6 +85,24 @@ export function ContactStep() {
 
   // Get the current draft profile
   const draftProfile = profiles.data?.find((profile) => profile.isDraft);
+
+  // Handle country changes and update phone format accordingly
+  useEffect(() => {
+    if (draftProfile?.contactInfo?.phone && localPhone) {
+      const savedPhone = draftProfile.contactInfo.phone;
+      // Check if the saved phone uses a different country code than current format
+      const currentCountryCode = phoneFormat.code;
+      const savedCountryCode = savedPhone.split(" ")[0];
+
+      if (savedCountryCode !== currentCountryCode) {
+        // Extract the local part from the saved phone
+        const localPart = savedPhone
+          .slice(savedCountryCode.length)
+          .replace(/^\s+/, "");
+        setLocalPhone(localPart);
+      }
+    }
+  }, [userCountryName, phoneFormat.code, draftProfile?.contactInfo?.phone]);
 
   // Sync local state with draft profile data when it becomes available
   useEffect(() => {
@@ -123,7 +145,13 @@ export function ContactStep() {
         }));
       }
     }
-  }, [draftProfile, localPhone, contactInfo, phoneFormat.code]);
+  }, [
+    draftProfile,
+    localPhone,
+    contactInfo,
+    phoneFormat.code,
+    userCountryName,
+  ]);
 
   // Sync ProfileContext state with draft profile data
   useEffect(() => {
