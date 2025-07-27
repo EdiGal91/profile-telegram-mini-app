@@ -51,6 +51,29 @@ export const IndexPage: FC = () => {
           )}
         </Section>
 
+        {/* Show only completed profiles */}
+        {profiles.data &&
+          profiles.data.filter((profile) => !profile.isDraft).length > 0 && (
+            <Section header="Ваши анкеты">
+              {profiles.data
+                .filter((profile) => !profile.isDraft)
+                .map((profile) => (
+                  <Cell
+                    key={profile._id}
+                    subtitle={`${
+                      profile.location?.city || profile.city || "Не указан"
+                    }, ${
+                      profile.location?.country ||
+                      profile.country ||
+                      "Не указан"
+                    } • ${profile.isActive ? "Активна" : "Неактивна"}`}
+                  >
+                    {profile.name}
+                  </Cell>
+                ))}
+            </Section>
+          )}
+
         {/* Debug information */}
         <Section header="Информация о профилях">
           <Cell subtitle={`Telegram ID: ${telegramId}`}>Ваш ID</Cell>
@@ -96,29 +119,6 @@ export const IndexPage: FC = () => {
             </Cell>
           )}
         </Section>
-
-        {/* Show only completed profiles */}
-        {profiles.data &&
-          profiles.data.filter((profile) => !profile.isDraft).length > 0 && (
-            <Section header="Ваши анкеты">
-              {profiles.data
-                .filter((profile) => !profile.isDraft)
-                .map((profile) => (
-                  <Cell
-                    key={profile._id}
-                    subtitle={`${
-                      profile.location?.city || profile.city || "Не указан"
-                    }, ${
-                      profile.location?.country ||
-                      profile.country ||
-                      "Не указан"
-                    } • ${profile.isActive ? "Активна" : "Неактивна"}`}
-                  >
-                    {profile.name}
-                  </Cell>
-                ))}
-            </Section>
-          )}
       </List>
     </Page>
   );
