@@ -436,4 +436,5 @@ export const PROFILE_STEPS = [
   { id: 4, title: "Фотографии", description: "Загрузите ваши фото" },
   { id: 5, title: "Контакты", description: "Способы связи" },
   { id: 6, title: "Цены", description: "Стоимость услуг" },
+  { id: 7, title: "Подтверждение", description: "Проверьте данные анкеты" },
 ] as const;

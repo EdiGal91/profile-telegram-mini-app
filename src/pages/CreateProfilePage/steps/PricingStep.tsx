@@ -160,10 +160,8 @@ export function PricingStep() {
         completeStep(6);
         saveProgress();
 
-        // Navigate back to home or show completion message
-        setTimeout(() => {
-          navigate("/");
-        }, 1000);
+        // Navigate to confirmation step
+        setStep(7);
       } catch (error) {
         console.error("Failed to update profile:", error);
         // You might want to show an error message to the user here
@@ -191,10 +189,10 @@ export function PricingStep() {
     return (
       <StepLayout
         currentStep={6}
-        totalSteps={6}
+        totalSteps={7}
         isValid={isValid}
         onPrevious={handlePrevious}
-        onComplete={handleComplete}
+        onNext={handleComplete}
       >
         <Text style={{ padding: "16px", textAlign: "center" }}>
           Загрузка данных...
@@ -206,10 +204,10 @@ export function PricingStep() {
   return (
     <StepLayout
       currentStep={6}
-      totalSteps={6}
+      totalSteps={7}
       isValid={isValid}
       onPrevious={handlePrevious}
-      onComplete={handleComplete}
+      onNext={handleComplete}
     >
       <List>
         <Section header="Стоимость услуг">
@@ -285,10 +283,6 @@ export function PricingStep() {
               </div>
             </div>
           ))}
-        </Section>
-
-        <Section header="Завершение">
-          <Text style={{ padding: "16px" }}>Анкета готова к сохранению.</Text>
         </Section>
       </List>
     </StepLayout>

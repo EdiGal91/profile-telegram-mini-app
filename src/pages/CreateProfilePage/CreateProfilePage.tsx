@@ -8,6 +8,7 @@ import { ServicesStep } from "./steps/ServicesStep";
 import { PhotosStep } from "./steps/PhotosStep";
 import { ContactStep } from "./steps/ContactStep";
 import { PricingStep } from "./steps/PricingStep";
+import { ConfirmationStep } from "./steps/ConfirmationStep";
 import { useEffect } from "react";
 
 // Component to initialize ProfileContext with draft data
@@ -116,6 +117,8 @@ function CreateProfileContent() {
         return <ContactStep />;
       case 6:
         return <PricingStep />;
+      case 7:
+        return <ConfirmationStep />;
       default:
         return <BasicInfoStep />;
     }

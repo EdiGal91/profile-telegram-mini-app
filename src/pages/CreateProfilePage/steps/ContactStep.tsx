@@ -135,9 +135,9 @@ export function ContactStep() {
   }, [
     draftProfile,
     localPhone,
-    contactInfo,
-    phoneFormat.code,
-    userCountryName,
+    contactInfo.telegram,
+    contactInfo.exposeTelegram,
+    contactInfo.exposeWhatsApp,
   ]);
 
   // Sync ProfileContext state with draft profile data
@@ -207,7 +207,7 @@ export function ContactStep() {
         updateData(updates);
       }
     }
-  }, [draftProfile, state.data.contactInfo, updateData]);
+  }, [draftProfile]);
 
   // Validate phone format based on country
   const cleanPhone = localPhone.replace(/\D/g, ""); // Remove non-digits for validation
@@ -297,8 +297,25 @@ export function ContactStep() {
     }
   };
 
+  // Only save when values actually change to avoid infinite loops
   useEffect(() => {
-    handleSave();
+    const currentContactInfo = {
+      ...contactInfo,
+      phoneCountryCode: phoneFormat.code,
+      phoneNumber: localPhone,
+    };
+
+    const savedContactInfo = state.data.contactInfo;
+
+    // Only update if values are different
+    if (
+      currentContactInfo.phoneNumber !== savedContactInfo?.phoneNumber ||
+      currentContactInfo.telegram !== savedContactInfo?.telegram ||
+      currentContactInfo.exposeTelegram !== savedContactInfo?.exposeTelegram ||
+      currentContactInfo.exposeWhatsApp !== savedContactInfo?.exposeWhatsApp
+    ) {
+      handleSave();
+    }
   }, [
     localPhone,
     contactInfo.telegram,
@@ -319,7 +336,7 @@ export function ContactStep() {
   return (
     <StepLayout
       currentStep={5}
-      totalSteps={6}
+      totalSteps={7}
       isValid={isValid}
       isLoading={isLoading}
       onPrevious={handlePrevious}
