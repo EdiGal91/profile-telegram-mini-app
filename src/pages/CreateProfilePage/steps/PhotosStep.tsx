@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Section, Button, List, Cell, Text } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
 import { useProfilesContext } from "@/context/ProfilesContext";
+import { StepLayout } from "@/components/StepLayout";
 
 interface PhotoData {
   url: string;
@@ -144,118 +145,115 @@ export function PhotosStep() {
   }, []);
 
   return (
-    <List>
-      <Section header="Фотографии">
-        <Text style={{ padding: "16px", opacity: 0.7 }}>
-          Добавьте от 1 до {maxPhotos} фотографий. Первая фотография будет
-          основной.
-        </Text>
+    <StepLayout
+      currentStep={4}
+      totalSteps={6}
+      isValid={isValid}
+      onPrevious={handlePrevious}
+      onNext={handleNext}
+    >
+      <List>
+        <Section header="Фотографии">
+          <Text style={{ padding: "16px", opacity: 0.7 }}>
+            Добавьте от 1 до {maxPhotos} фотографий. Первая фотография будет
+            основной.
+          </Text>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/jpg,image/png,image/webp"
-          multiple
-          style={{ display: "none" }}
-          onChange={handleFileSelect}
-        />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/webp"
+            multiple
+            style={{ display: "none" }}
+            onChange={handleFileSelect}
+          />
 
-        {photos.length < maxPhotos && (
-          <Cell onClick={handleAddPhoto} interactiveAnimation="opacity">
-            📷 Добавить фото
+          {photos.length < maxPhotos && (
+            <Cell onClick={handleAddPhoto} interactiveAnimation="opacity">
+              📷 Добавить фото
+            </Cell>
+          )}
+
+          <Cell
+            onClick={() => {
+              // Add a demo photo for testing purposes
+              setPhotos((prev) => [
+                ...prev,
+                {
+                  url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23ff6b6b'/%3E%3Ctext x='50' y='50' text-anchor='middle' dy='0.3em' fill='white'%3EТест%3C/text%3E%3C/svg%3E",
+                  isObjectURL: false,
+                },
+              ]);
+            }}
+            interactiveAnimation="opacity"
+          >
+            🧪 Добавить тестовое фото
           </Cell>
-        )}
 
-        <Cell
-          onClick={() => {
-            // Add a demo photo for testing purposes
-            setPhotos((prev) => [
-              ...prev,
-              {
-                url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23ff6b6b'/%3E%3Ctext x='50' y='50' text-anchor='middle' dy='0.3em' fill='white'%3EТест%3C/text%3E%3C/svg%3E",
-                isObjectURL: false,
-              },
-            ]);
-          }}
-          interactiveAnimation="opacity"
-        >
-          🧪 Добавить тестовое фото
-        </Cell>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
-            gap: "8px",
-            padding: "16px",
-          }}
-        >
-          {photos.map((photo, index) => (
-            <div key={index} style={{ position: "relative" }}>
-              <img
-                src={photo.url}
-                alt={`Photo ${index + 1}`}
-                style={{
-                  width: "100%",
-                  height: "100px",
-                  objectFit: "cover",
-                  borderRadius: "8px",
-                  border:
-                    index === 0
-                      ? "2px solid var(--tg-theme-button-color)"
-                      : "1px solid var(--tg-theme-section-bg-color)",
-                }}
-              />
-              {index === 0 && (
-                <div
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
+              gap: "8px",
+              padding: "16px",
+            }}
+          >
+            {photos.map((photo, index) => (
+              <div key={index} style={{ position: "relative" }}>
+                <img
+                  src={photo.url}
+                  alt={`Photo ${index + 1}`}
+                  style={{
+                    width: "100%",
+                    height: "100px",
+                    objectFit: "cover",
+                    borderRadius: "8px",
+                    border:
+                      index === 0
+                        ? "2px solid var(--tg-theme-button-color)"
+                        : "1px solid var(--tg-theme-section-bg-color)",
+                  }}
+                />
+                {index === 0 && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "4px",
+                      left: "4px",
+                      background: "var(--tg-theme-button-color)",
+                      color: "var(--tg-theme-button-text-color)",
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      fontSize: "10px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    ГЛАВНАЯ
+                  </div>
+                )}
+                <Button
+                  size="s"
+                  mode="outline"
+                  onClick={() => removePhoto(index)}
                   style={{
                     position: "absolute",
                     top: "4px",
-                    left: "4px",
-                    background: "var(--tg-theme-button-color)",
-                    color: "var(--tg-theme-button-text-color)",
-                    padding: "2px 6px",
-                    borderRadius: "4px",
-                    fontSize: "10px",
-                    fontWeight: "bold",
+                    right: "4px",
+                    minWidth: "24px",
+                    height: "24px",
+                    padding: "0",
+                    background: "rgba(0,0,0,0.7)",
+                    color: "white",
+                    border: "none",
                   }}
                 >
-                  ГЛАВНАЯ
-                </div>
-              )}
-              <Button
-                size="s"
-                mode="outline"
-                onClick={() => removePhoto(index)}
-                style={{
-                  position: "absolute",
-                  top: "4px",
-                  right: "4px",
-                  minWidth: "24px",
-                  height: "24px",
-                  padding: "0",
-                  background: "rgba(0,0,0,0.7)",
-                  color: "white",
-                  border: "none",
-                }}
-              >
-                ×
-              </Button>
-            </div>
-          ))}
-        </div>
-      </Section>
-
-      <Section>
-        <div style={{ padding: "16px", display: "flex", gap: "12px" }}>
-          <Button size="l" mode="outline" stretched onClick={handlePrevious}>
-            Назад
-          </Button>
-          <Button size="l" stretched disabled={!isValid} onClick={handleNext}>
-            Далее: Контакты
-          </Button>
-        </div>
-      </Section>
-    </List>
+                  ×
+                </Button>
+              </div>
+            ))}
+          </div>
+        </Section>
+      </List>
+    </StepLayout>
   );
 }

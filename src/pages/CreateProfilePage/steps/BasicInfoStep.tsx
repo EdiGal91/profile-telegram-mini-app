@@ -1,15 +1,9 @@
 import { useState, useEffect } from "react";
-import {
-  Section,
-  Input,
-  Textarea,
-  Button,
-  List,
-  Spinner,
-} from "@telegram-apps/telegram-ui";
+import { Section, Input, Textarea, List } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
 import { useProfilesContext } from "@/context/ProfilesContext";
 import { usePatchProfile } from "@/hooks/useProfiles";
+import { StepLayout } from "@/components/StepLayout";
 
 export function BasicInfoStep() {
   const { state, updateData, completeStep, setStep } = useProfile();
@@ -100,49 +94,37 @@ export function BasicInfoStep() {
   }, [name, description]);
 
   return (
-    <List>
-      <Section header="Основная информация">
-        <Input
-          header="Ваше имя"
-          placeholder="Введите ваше имя"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          status={name.length > 0 && name.length < 2 ? "error" : undefined}
-        />
+    <StepLayout
+      currentStep={1}
+      totalSteps={6}
+      isValid={isValid && !!draftProfile}
+      isLoading={isLoading}
+      onNext={handleNext}
+    >
+      <List>
+        <Section header="Основная информация">
+          <Input
+            header="Ваше имя"
+            placeholder="Введите ваше имя"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            status={name.length > 0 && name.length < 2 ? "error" : undefined}
+          />
 
-        <Textarea
-          header="Описание"
-          placeholder="Расскажите о себе, ваших увлечениях и том, что делает вас особенной..."
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={4}
-          status={
-            description.length > 0 && description.length < 10
-              ? "error"
-              : undefined
-          }
-        />
-
-        <div style={{ padding: "16px" }}>
-          <Button
-            size="l"
-            stretched
-            disabled={!isValid || isLoading || !draftProfile}
-            onClick={handleNext}
-          >
-            {isLoading ? (
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "8px" }}
-              >
-                <Spinner size="s" />
-                <span>Сохранение...</span>
-              </div>
-            ) : (
-              "Далее: Местоположение"
-            )}
-          </Button>
-        </div>
-      </Section>
-    </List>
+          <Textarea
+            header="Описание"
+            placeholder="Расскажите о себе, ваших увлечениях и том, что делает вас особенной..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            status={
+              description.length > 0 && description.length < 10
+                ? "error"
+                : undefined
+            }
+          />
+        </Section>
+      </List>
+    </StepLayout>
   );
 }

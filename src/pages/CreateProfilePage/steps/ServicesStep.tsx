@@ -5,13 +5,13 @@ import {
   List,
   Cell,
   Checkbox,
-  Button,
   Spinner,
 } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
 import { useProfilesContext } from "@/context/ProfilesContext";
 import { useServices, usePatchProfile } from "@/hooks/useProfiles";
 import { ServiceCategory, ServiceOption } from "@/types/api";
+import { StepLayout } from "@/components/StepLayout";
 
 export function ServicesStep() {
   const { updateData, completeStep, setStep } = useProfile();
@@ -141,84 +141,90 @@ export function ServicesStep() {
   // Loading / Error
   if (isLoading) {
     return (
-      <List>
-        <Section>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 24,
-            }}
-          >
-            <Spinner size="l" />
-            <span style={{ marginLeft: 12 }}>Загружаем услуги...</span>
-          </div>
-        </Section>
-      </List>
+      <StepLayout
+        currentStep={3}
+        totalSteps={6}
+        isValid={false}
+        isLoading={true}
+      >
+        <List>
+          <Section>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 24,
+              }}
+            >
+              <Spinner size="l" />
+              <span style={{ marginLeft: 12 }}>Загружаем услуги...</span>
+            </div>
+          </Section>
+        </List>
+      </StepLayout>
     );
   }
   if (error) {
     return (
-      <List>
-        <Section>
-          <div style={{ padding: 16, textAlign: "center" }}>
-            Ошибка загрузки услуг. Попробуйте позже.
-          </div>
-        </Section>
-      </List>
+      <StepLayout currentStep={3} totalSteps={6} isValid={false}>
+        <List>
+          <Section>
+            <div style={{ padding: 16, textAlign: "center" }}>
+              Ошибка загрузки услуг. Попробуйте позже.
+            </div>
+          </Section>
+        </List>
+      </StepLayout>
     );
   }
 
   // Основной UI
   return (
-    <List>
-      {services &&
-        Object.entries(services).map(([catKey, cat]) => (
-          <Section key={catKey} header={cat.label.ru}>
-            {cat.options.length === 0 ? (
-              <Cell
-                onClick={() => toggleOption(catKey)}
-                after={
-                  <Checkbox
-                    checked={(selected[catKey] || []).length > 0}
-                    onChange={() => toggleOption(catKey)}
-                  />
-                }
-                interactiveAnimation="opacity"
-              >
-                {cat.label.ru}
-              </Cell>
-            ) : (
-              cat.options.map((opt: ServiceOption) => (
+    <StepLayout
+      currentStep={3}
+      totalSteps={6}
+      isValid={isValid}
+      onPrevious={handlePrev}
+      onNext={handleNext}
+    >
+      <List>
+        {services &&
+          Object.entries(services).map(([catKey, cat]) => (
+            <Section key={catKey} header={cat.label.ru}>
+              {cat.options.length === 0 ? (
                 <Cell
-                  key={opt.code}
-                  onClick={() => toggleOption(catKey, opt.code)}
+                  onClick={() => toggleOption(catKey)}
                   after={
                     <Checkbox
-                      checked={(selected[catKey] || []).includes(opt.code)}
-                      onChange={() => toggleOption(catKey, opt.code)}
+                      checked={(selected[catKey] || []).length > 0}
+                      onChange={() => toggleOption(catKey)}
                     />
                   }
                   interactiveAnimation="opacity"
                 >
-                  {opt.label.ru}
+                  {cat.label.ru}
                 </Cell>
-              ))
-            )}
-          </Section>
-        ))}
-
-      <Section>
-        <div style={{ display: "flex", gap: 12, padding: 16 }}>
-          <Button mode="outline" stretched onClick={handlePrev}>
-            Назад
-          </Button>
-          <Button stretched disabled={!isValid} onClick={handleNext}>
-            Далее: Фото
-          </Button>
-        </div>
-      </Section>
-    </List>
+              ) : (
+                cat.options.map((opt: ServiceOption) => (
+                  <Cell
+                    key={opt.code}
+                    onClick={() => toggleOption(catKey, opt.code)}
+                    after={
+                      <Checkbox
+                        checked={(selected[catKey] || []).includes(opt.code)}
+                        onChange={() => toggleOption(catKey, opt.code)}
+                      />
+                    }
+                    interactiveAnimation="opacity"
+                  >
+                    {opt.label.ru}
+                  </Cell>
+                ))
+              )}
+            </Section>
+          ))}
+      </List>
+    </StepLayout>
   );
 }

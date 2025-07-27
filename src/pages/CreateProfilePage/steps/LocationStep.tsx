@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import {
   Section,
   Select,
-  Button,
   List,
   Cell,
   Checkbox,
@@ -17,6 +16,7 @@ import {
   validateCountryMappings,
 } from "@/utils/countryUtils";
 import { getCitiesForCountry } from "@/utils/cityUtils";
+import { StepLayout } from "@/components/StepLayout";
 
 const ALL_COUNTRIES_CODE = "ALL";
 
@@ -187,80 +187,67 @@ export function LocationStep() {
   const isAllSelected = clientCountriesIso.includes(ALL_COUNTRIES_CODE);
 
   return (
-    <List>
-      <Section header="Ваше местоположение">
-        <Select
-          header="Ваша страна"
-          value={userCountryIso}
-          onChange={(e) => handleCountryChange(e.target.value)}
-        >
-          <option value="" disabled>
-            Выберите страну
-          </option>
-          {escortCountries.map((country) => (
-            <option key={country.iso} value={country.iso}>
-              {country.name}
-            </option>
-          ))}
-        </Select>
-
-        {userCountryIso && (
+    <StepLayout
+      currentStep={2}
+      totalSteps={6}
+      isValid={isValid}
+      onPrevious={() => handleSaveAndGo(1)}
+      onNext={() => handleSaveAndGo(3)}
+    >
+      <List>
+        <Section header="Ваше местоположение">
           <Select
-            header="Ваш город"
-            value={userCity}
-            onChange={(e) => setUserCity(e.target.value)}
+            header="Ваша страна"
+            value={userCountryIso}
+            onChange={(e) => handleCountryChange(e.target.value)}
           >
             <option value="" disabled>
-              Выберите город
+              Выберите страну
             </option>
-            {availableCities.map((city) => (
-              <option key={city} value={city}>
-                {city}
+            {escortCountries.map((country) => (
+              <option key={country.iso} value={country.iso}>
+                {country.name}
               </option>
             ))}
           </Select>
-        )}
-      </Section>
 
-      <Section header="Пользователям из каких стран отображать Вашу анкету?">
-        {allCountries.map((country) => (
-          <Cell
-            key={country.iso}
-            onClick={() => handleClientCountryToggle(country.iso)}
-            after={
-              <Checkbox
-                checked={clientCountriesIso.includes(country.iso)}
-                disabled={isAllSelected && country.iso !== ALL_COUNTRIES_CODE}
-                onChange={() => handleClientCountryToggle(country.iso)}
-              />
-            }
-            interactiveAnimation="opacity"
-          >
-            {country.name}
-          </Cell>
-        ))}
-      </Section>
+          {userCountryIso && (
+            <Select
+              header="Ваш город"
+              value={userCity}
+              onChange={(e) => setUserCity(e.target.value)}
+            >
+              <option value="" disabled>
+                Выберите город
+              </option>
+              {availableCities.map((city) => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Section>
 
-      <Section>
-        <div style={{ padding: "16px", display: "flex", gap: "12px" }}>
-          <Button
-            size="l"
-            mode="outline"
-            stretched
-            onClick={() => handleSaveAndGo(1)}
-          >
-            Назад
-          </Button>
-          <Button
-            size="l"
-            stretched
-            disabled={!isValid}
-            onClick={() => handleSaveAndGo(3)}
-          >
-            Далее: Услуги
-          </Button>
-        </div>
-      </Section>
-    </List>
+        <Section header="Пользователям из каких стран отображать Вашу анкету?">
+          {allCountries.map((country) => (
+            <Cell
+              key={country.iso}
+              onClick={() => handleClientCountryToggle(country.iso)}
+              after={
+                <Checkbox
+                  checked={clientCountriesIso.includes(country.iso)}
+                  disabled={isAllSelected && country.iso !== ALL_COUNTRIES_CODE}
+                  onChange={() => handleClientCountryToggle(country.iso)}
+                />
+              }
+              interactiveAnimation="opacity"
+            >
+              {country.name}
+            </Cell>
+          ))}
+        </Section>
+      </List>
+    </StepLayout>
   );
 }

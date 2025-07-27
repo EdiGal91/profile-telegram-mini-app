@@ -1,15 +1,9 @@
 import { useState, useEffect } from "react";
-import {
-  Section,
-  Input,
-  Select,
-  Button,
-  List,
-  Text,
-} from "@telegram-apps/telegram-ui";
+import { Section, Input, Select, List, Text } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
 import { useNavigate } from "react-router-dom";
 import { ISO_TO_COUNTRY } from "@/types/profile";
+import { StepLayout } from "@/components/StepLayout";
 
 // Available time durations
 const TIME_DURATIONS = [
@@ -139,99 +133,93 @@ export function PricingStep() {
   }, [pricing]);
 
   return (
-    <List>
-      <Section header="Стоимость услуг">
-        <Select
-          header="Валюта"
-          value={pricing.currency}
-          onChange={(e) => handleCurrencyChange(e.target.value)}
-        >
-          {availableCurrencies.map((curr) => (
-            <option key={curr.value} value={curr.value}>
-              {curr.label}
-            </option>
-          ))}
-        </Select>
-
-        <Text style={{ padding: "16px", opacity: 0.7, fontSize: "14px" }}>
-          Вы можете указать цены для разных временных интервалов. Вы можете
-          указать только инколл, только аутколл, или оба.
-        </Text>
-
-        {TIME_DURATIONS.map((duration) => (
-          <div
-            key={duration.value}
-            style={{
-              padding: "16px",
-              borderBottom: "1px solid var(--tg-theme-section-bg-color)",
-            }}
+    <StepLayout
+      currentStep={6}
+      totalSteps={6}
+      isValid={isValid}
+      onPrevious={handlePrevious}
+      onComplete={handleComplete}
+    >
+      <List>
+        <Section header="Стоимость услуг">
+          <Select
+            header="Валюта"
+            value={pricing.currency}
+            onChange={(e) => handleCurrencyChange(e.target.value)}
           >
-            <Text
+            {availableCurrencies.map((curr) => (
+              <option key={curr.value} value={curr.value}>
+                {curr.label}
+              </option>
+            ))}
+          </Select>
+
+          <Text style={{ padding: "16px", opacity: 0.7, fontSize: "14px" }}>
+            Вы можете указать цены для разных временных интервалов. Вы можете
+            указать только инколл, только аутколл, или оба.
+          </Text>
+
+          {TIME_DURATIONS.map((duration) => (
+            <div
+              key={duration.value}
               style={{
-                fontWeight: "500",
-                marginBottom: "12px",
-                fontSize: "16px",
+                padding: "16px",
+                borderBottom: "1px solid var(--tg-theme-section-bg-color)",
               }}
             >
-              {duration.label}
-            </Text>
+              <Text
+                style={{
+                  fontWeight: "500",
+                  marginBottom: "12px",
+                  fontSize: "16px",
+                }}
+              >
+                {duration.label}
+              </Text>
 
-            <div style={{ display: "flex", gap: "12px" }}>
-              <div style={{ flex: 1 }}>
-                <Input
-                  header={`Инколл ${getCurrencySymbol(pricing.currency)}`}
-                  placeholder="0"
-                  value={
-                    pricing.rates[duration.value]?.incall?.toString() || ""
-                  }
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    const numValue = value === "" ? 0 : parseInt(value) || 0;
-                    handleRateChange(duration.value, "incall", numValue);
-                  }}
-                  type="number"
-                  min="0"
-                />
-              </div>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <div style={{ flex: 1 }}>
+                  <Input
+                    header={`Инколл ${getCurrencySymbol(pricing.currency)}`}
+                    placeholder="0"
+                    value={
+                      pricing.rates[duration.value]?.incall?.toString() || ""
+                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const numValue = value === "" ? 0 : parseInt(value) || 0;
+                      handleRateChange(duration.value, "incall", numValue);
+                    }}
+                    type="number"
+                    min="0"
+                  />
+                </div>
 
-              <div style={{ flex: 1 }}>
-                <Input
-                  header={`Аутколл ${getCurrencySymbol(pricing.currency)}`}
-                  placeholder="0"
-                  value={
-                    pricing.rates[duration.value]?.outcall?.toString() || ""
-                  }
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    const numValue = value === "" ? 0 : parseInt(value) || 0;
-                    handleRateChange(duration.value, "outcall", numValue);
-                  }}
-                  type="number"
-                  min="0"
-                />
+                <div style={{ flex: 1 }}>
+                  <Input
+                    header={`Аутколл ${getCurrencySymbol(pricing.currency)}`}
+                    placeholder="0"
+                    value={
+                      pricing.rates[duration.value]?.outcall?.toString() || ""
+                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const numValue = value === "" ? 0 : parseInt(value) || 0;
+                      handleRateChange(duration.value, "outcall", numValue);
+                    }}
+                    type="number"
+                    min="0"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </Section>
+          ))}
+        </Section>
 
-      <Section header="Завершение">
-        <Text style={{ padding: "16px" }}>Анкета готова к сохранению.</Text>
-
-        <div style={{ padding: "16px", display: "flex", gap: "12px" }}>
-          <Button size="l" mode="outline" stretched onClick={handlePrevious}>
-            Назад
-          </Button>
-          <Button
-            size="l"
-            stretched
-            disabled={!isValid}
-            onClick={handleComplete}
-          >
-            Сохранить анкету
-          </Button>
-        </div>
-      </Section>
-    </List>
+        <Section header="Завершение">
+          <Text style={{ padding: "16px" }}>Анкета готова к сохранению.</Text>
+        </Section>
+      </List>
+    </StepLayout>
   );
 }

@@ -13,7 +13,7 @@ import { useEffect } from "react";
 // Component to initialize ProfileContext with draft data
 function DraftProfileInitializer() {
   const { profiles } = useProfilesContext();
-  const { updateData } = useProfile();
+  const { updateData, state } = useProfile();
 
   useEffect(() => {
     const draftProfile = profiles.data?.find((profile) => profile.isDraft);
@@ -21,24 +21,64 @@ function DraftProfileInitializer() {
       // Sync all draft data with ProfileContext
       const updates: any = {};
 
-      if (draftProfile.name) updates.name = draftProfile.name;
-      if (draftProfile.description)
+      // Only update if the data is different from current state
+      if (draftProfile.name && draftProfile.name !== state.data.name) {
+        updates.name = draftProfile.name;
+      }
+      if (
+        draftProfile.description &&
+        draftProfile.description !== state.data.description
+      ) {
         updates.description = draftProfile.description;
-      if (draftProfile.location) updates.location = draftProfile.location;
-      if (draftProfile.clientCountries)
+      }
+      if (
+        draftProfile.location &&
+        JSON.stringify(draftProfile.location) !==
+          JSON.stringify(state.data.location)
+      ) {
+        updates.location = draftProfile.location;
+      }
+      if (
+        draftProfile.clientCountries &&
+        JSON.stringify(draftProfile.clientCountries) !==
+          JSON.stringify(state.data.clientCountries)
+      ) {
         updates.clientCountries = draftProfile.clientCountries;
-      if (draftProfile.servicesList)
+      }
+      if (
+        draftProfile.servicesList &&
+        JSON.stringify(draftProfile.servicesList) !==
+          JSON.stringify(state.data.servicesList)
+      ) {
         updates.servicesList = draftProfile.servicesList;
-      if (draftProfile.photos) updates.photos = draftProfile.photos;
-      if (draftProfile.contactInfo)
+      }
+      if (
+        draftProfile.photos &&
+        JSON.stringify(draftProfile.photos) !==
+          JSON.stringify(state.data.photos)
+      ) {
+        updates.photos = draftProfile.photos;
+      }
+      if (
+        draftProfile.contactInfo &&
+        JSON.stringify(draftProfile.contactInfo) !==
+          JSON.stringify(state.data.contactInfo)
+      ) {
         updates.contactInfo = draftProfile.contactInfo;
-      if (draftProfile.pricing) updates.pricing = draftProfile.pricing;
+      }
+      if (
+        draftProfile.pricing &&
+        JSON.stringify(draftProfile.pricing) !==
+          JSON.stringify(state.data.pricing)
+      ) {
+        updates.pricing = draftProfile.pricing;
+      }
 
       if (Object.keys(updates).length > 0) {
         updateData(updates);
       }
     }
-  }, [profiles.data, updateData]);
+  }, [profiles.data, state.data]); // Added state.data to dependencies for comparison
 
   return null;
 }
