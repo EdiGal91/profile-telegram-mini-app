@@ -4,13 +4,14 @@ import { useProfile } from "@/context/ProfileContext";
 import { useNavigate } from "react-router-dom";
 import { ISO_TO_COUNTRY } from "@/types/profile";
 import { StepLayout } from "@/components/StepLayout";
+import { useProfiles, usePatchProfile } from "@/hooks/useProfiles";
 
 // Available time durations
 const TIME_DURATIONS = [
-  { value: "30min", label: "30 минут" },
-  { value: "1hour", label: "1 час" },
-  { value: "2hours", label: "2 часа" },
-  { value: "6hours", label: "6 часов" },
+  { value: "30m", label: "30 минут" },
+  { value: "1h", label: "1 час" },
+  { value: "2h", label: "2 часа" },
+  { value: "6h", label: "6 часов" },
 ];
 
 // Country-specific currencies + USD
@@ -37,6 +38,8 @@ export function PricingStep() {
   const { state, updateData, completeStep, saveProgress, setStep } =
     useProfile();
   const navigate = useNavigate();
+  const { data: profiles, isLoading: profilesLoading } = useProfiles();
+  const patchProfileMutation = usePatchProfile();
 
   // Get user's country to determine available currencies
   const userCountryISO = state.data.location?.country;
@@ -54,12 +57,38 @@ export function PricingStep() {
     return currency?.label.split(" ")[0] || currencyCode; // Extract symbol part
   };
 
+  // Initialize pricing from backend data or default
   const [pricing, setPricing] = useState(
     state.data.pricing || {
       currency: availableCurrencies[0].value,
       rates: {},
     }
   );
+
+  // Load pricing data from backend when profiles are loaded
+  useEffect(() => {
+    if (profiles && profiles.length > 0) {
+      const profile = profiles[0]; // Assuming we're working with the first profile
+      if (profile.priceCurrency && profile.pricingSlots) {
+        // Convert backend pricing slots to local format
+        const rates: { [key: string]: { incall?: number; outcall?: number } } =
+          {};
+        profile.pricingSlots.forEach(
+          (slot: { slot: string; incall?: number; outcall?: number }) => {
+            rates[slot.slot] = {
+              incall: slot.incall,
+              outcall: slot.outcall,
+            };
+          }
+        );
+
+        setPricing({
+          currency: profile.priceCurrency,
+          rates,
+        });
+      }
+    }
+  }, [profiles]);
 
   // Pricing is optional - always valid
   const isValid = true;
@@ -103,16 +132,42 @@ export function PricingStep() {
     });
   };
 
-  const handleComplete = () => {
-    if (isValid) {
-      updateData({ pricing });
-      completeStep(6);
-      saveProgress();
+  const handleComplete = async () => {
+    if (isValid && profiles && profiles.length > 0) {
+      const profile = profiles[0];
 
-      // Navigate back to home or show completion message
-      setTimeout(() => {
-        navigate("/");
-      }, 1000);
+      // Convert local pricing format to backend format
+      const pricingSlots = Object.entries(pricing.rates).map(
+        ([slot, rates]) => ({
+          slot,
+          ...(rates.incall && { incall: rates.incall }),
+          ...(rates.outcall && { outcall: rates.outcall }),
+        })
+      );
+
+      try {
+        // Send update request to backend
+        await patchProfileMutation.mutateAsync({
+          id: profile._id,
+          profile: {
+            priceCurrency: pricing.currency,
+            pricingSlots,
+          },
+        });
+
+        // Update local state
+        updateData({ pricing });
+        completeStep(6);
+        saveProgress();
+
+        // Navigate back to home or show completion message
+        setTimeout(() => {
+          navigate("/");
+        }, 1000);
+      } catch (error) {
+        console.error("Failed to update profile:", error);
+        // You might want to show an error message to the user here
+      }
     }
   };
 
@@ -131,6 +186,22 @@ export function PricingStep() {
   useEffect(() => {
     handleSave();
   }, [pricing]);
+
+  if (profilesLoading) {
+    return (
+      <StepLayout
+        currentStep={6}
+        totalSteps={6}
+        isValid={isValid}
+        onPrevious={handlePrevious}
+        onComplete={handleComplete}
+      >
+        <Text style={{ padding: "16px", textAlign: "center" }}>
+          Загрузка данных...
+        </Text>
+      </StepLayout>
+    );
+  }
 
   return (
     <StepLayout

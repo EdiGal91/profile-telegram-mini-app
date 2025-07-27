@@ -1,4 +1,3 @@
-import React from "react";
 import { Button, Spinner } from "@telegram-apps/telegram-ui";
 
 interface StepNavigationProps {

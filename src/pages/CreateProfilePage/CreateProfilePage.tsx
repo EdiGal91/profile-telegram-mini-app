@@ -66,12 +66,28 @@ function DraftProfileInitializer() {
       ) {
         updates.contactInfo = draftProfile.contactInfo;
       }
-      if (
-        draftProfile.pricing &&
-        JSON.stringify(draftProfile.pricing) !==
-          JSON.stringify(state.data.pricing)
-      ) {
-        updates.pricing = draftProfile.pricing;
+      // Handle pricing data from backend format
+      if (draftProfile.priceCurrency && draftProfile.pricingSlots) {
+        // Convert backend pricing format to frontend format
+        const rates: { [key: string]: { incall?: number; outcall?: number } } =
+          {};
+        draftProfile.pricingSlots.forEach((slot) => {
+          rates[slot.slot] = {
+            incall: slot.incall,
+            outcall: slot.outcall,
+          };
+        });
+
+        const backendPricing = {
+          currency: draftProfile.priceCurrency,
+          rates,
+        };
+
+        if (
+          JSON.stringify(backendPricing) !== JSON.stringify(state.data.pricing)
+        ) {
+          updates.pricing = backendPricing;
+        }
       }
 
       if (Object.keys(updates).length > 0) {

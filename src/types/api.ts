@@ -1,7 +1,10 @@
 // API Profile type - what comes from the backend
 export interface ApiProfile {
   _id: string;
-  telegramId: string;
+  userId: string;
+  telegramId: number;
+  status: string;
+  isDraft: boolean;
   name: string;
   description: string;
   // Support both nested and flat location formats
@@ -23,14 +26,16 @@ export interface ApiProfile {
     exposeTelegram?: boolean;
     exposeWhatsApp?: boolean;
   };
-  pricing: {
-    incall?: string;
-    outcall?: string;
-  };
+  priceCurrency: string;
+  pricingSlots: Array<{
+    slot: string;
+    incall?: number;
+    outcall?: number;
+  }>;
   isActive: boolean;
-  isDraft: boolean; // Indicates if this is a draft profile
   createdAt: string;
   updatedAt: string;
+  __v: number;
 }
 
 // API response for profiles list - just an array of profiles
