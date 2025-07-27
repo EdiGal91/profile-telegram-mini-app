@@ -1,3 +1,4 @@
+// src/pages/CreateProfilePage/steps/PhotosStep.tsx
 import { useState, useEffect, useRef } from "react";
 import { Section, Button, List, Cell, Text } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
@@ -172,7 +173,6 @@ export function PhotosStep() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/jpg,image/png,image/webp"
             multiple
             style={{ display: "none" }}
             onChange={handleFileSelect}
