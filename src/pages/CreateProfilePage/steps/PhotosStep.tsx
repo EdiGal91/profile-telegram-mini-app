@@ -159,6 +159,16 @@ export function PhotosStep() {
             основной.
           </Text>
 
+          <Text
+            style={{
+              padding: "0 16px 16px",
+              fontSize: "14px",
+              fontWeight: "500",
+            }}
+          >
+            Загружено: {photos.length} из {maxPhotos} фотографий
+          </Text>
+
           <input
             ref={fileInputRef}
             type="file"
