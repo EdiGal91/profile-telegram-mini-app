@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Section, Input, Select, List, Text } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
-import { useNavigate } from "react-router-dom";
 import { ISO_TO_COUNTRY } from "@/types/profile";
 import { StepLayout } from "@/components/StepLayout";
 import { useProfiles, usePatchProfile } from "@/hooks/useProfiles";
@@ -37,7 +36,6 @@ const COUNTRY_CURRENCIES = {
 export function PricingStep() {
   const { state, updateData, completeStep, saveProgress, setStep } =
     useProfile();
-  const navigate = useNavigate();
   const { data: profiles, isLoading: profilesLoading } = useProfiles();
   const patchProfileMutation = usePatchProfile();
 
