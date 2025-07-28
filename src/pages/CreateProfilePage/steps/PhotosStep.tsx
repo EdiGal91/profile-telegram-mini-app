@@ -248,7 +248,7 @@ export function PhotosStep() {
                     objectFit: "cover",
                     borderRadius: "8px",
                     border:
-                      photo.isMain || index === 0
+                      photo.isMain === true
                         ? "2px solid var(--tg-theme-button-color)"
                         : "1px solid var(--tg-theme-section-bg-color)",
                     opacity: pendingUploads.has(photo.uuid || "") ? 0.6 : 1,
@@ -271,7 +271,7 @@ export function PhotosStep() {
                     Загрузка...
                   </div>
                 )}
-                {(photo.isMain || index === 0) && (
+                {photo.isMain === true && (
                   <div
                     style={{
                       position: "absolute",
