@@ -237,22 +237,6 @@ export function PhotosStep() {
             </Cell>
           )}
 
-          <Cell
-            onClick={() => {
-              // Add a demo photo for testing purposes
-              setPhotos((prev) => [
-                ...prev,
-                {
-                  url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23ff6b6b'%3E%3Ctext x='50' y='50' text-anchor='middle' dy='0.3em' fill='white'%3EТест%3C/text%3E%3C/svg%3E",
-                  isObjectURL: false,
-                },
-              ]);
-            }}
-            interactiveAnimation="opacity"
-          >
-            🧪 Добавить тестовое фото
-          </Cell>
-
           <div
             style={{
               display: "grid",
