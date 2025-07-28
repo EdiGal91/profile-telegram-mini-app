@@ -97,7 +97,7 @@ export function ProfileStepper() {
           })}
 
           {/* Clear data button */}
-          <Button
+          {/* <Button
             size="s"
             mode="outline"
             onClick={() => {
@@ -114,7 +114,7 @@ export function ProfileStepper() {
             }}
           >
             🗑️
-          </Button>
+          </Button> */}
         </div>
       </div>
     </Section>

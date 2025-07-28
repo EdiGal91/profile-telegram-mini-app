@@ -51,9 +51,3 @@ if (import.meta.env.DEV) {
     }
   );
 }
-
-// Services API
-export const fetchServices = async () => {
-  const response = await api.get("/profiles/services");
-  return response.data;
-};

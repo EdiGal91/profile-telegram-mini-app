@@ -8,8 +8,8 @@ import {
   patchProfile,
   deleteProfile,
   uploadProfilePhotos,
+  fetchServices,
 } from "@/services/profileService";
-import { fetchServices } from "@/services/api";
 import { ApiProfile } from "@/types/api";
 
 // Query keys

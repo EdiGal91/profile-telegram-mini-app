@@ -1,11 +1,13 @@
 import { api } from "./api";
 import { ProfilesResponse, ApiProfile } from "@/types/api";
 
+const PROFILE_API_URL = "/telegram/profiles";
+
 // Fetch profiles for a specific telegram user
 export const fetchProfiles = async (
   telegramId: number
 ): Promise<ProfilesResponse> => {
-  const response = await api.get<ProfilesResponse>("/profiles", {
+  const response = await api.get<ProfilesResponse>(PROFILE_API_URL, {
     params: { telegramId },
   });
   return response.data;
@@ -15,13 +17,13 @@ export const fetchProfiles = async (
 export const createProfile = async (
   profile: Omit<ApiProfile, "id" | "createdAt" | "updatedAt">
 ): Promise<ApiProfile> => {
-  const response = await api.post<ApiProfile>("/profiles", profile);
+  const response = await api.post<ApiProfile>(PROFILE_API_URL, profile);
   return response.data;
 };
 
 // Create a draft profile (only telegramId and isDraft)
 export const createDraftProfile = async (telegramId: number) => {
-  const response = await api.post<ApiProfile>("/profiles", {
+  const response = await api.post<ApiProfile>(PROFILE_API_URL, {
     telegramId,
   });
   return response.data;
@@ -32,7 +34,10 @@ export const updateProfile = async (
   id: string,
   profile: Partial<ApiProfile>
 ): Promise<ApiProfile> => {
-  const response = await api.put<ApiProfile>(`/profiles/${id}`, profile);
+  const response = await api.put<ApiProfile>(
+    `${PROFILE_API_URL}/${id}`,
+    profile
+  );
   return response.data;
 };
 
@@ -41,13 +46,16 @@ export const patchProfile = async (
   id: string,
   profile: Partial<ApiProfile>
 ): Promise<ApiProfile> => {
-  const response = await api.patch<ApiProfile>(`/profiles/${id}`, profile);
+  const response = await api.patch<ApiProfile>(
+    `${PROFILE_API_URL}/${id}`,
+    profile
+  );
   return response.data;
 };
 
 // Delete a profile
 export const deleteProfile = async (id: string): Promise<void> => {
-  await api.delete(`/profiles/${id}`);
+  await api.delete(`${PROFILE_API_URL}/${id}`);
 };
 
 // Upload photos for a profile
@@ -61,7 +69,7 @@ export const uploadProfilePhotos = async (
   });
 
   const response = await api.post<{ urls: string[] }>(
-    `/profiles/${profileId}/photos`,
+    `${PROFILE_API_URL}/${profileId}/photos`,
     formData,
     {
       headers: {
@@ -71,4 +79,10 @@ export const uploadProfilePhotos = async (
   );
 
   return response.data.urls;
+};
+
+// Fetch available services for profiles
+export const fetchServices = async () => {
+  const response = await api.get(`${PROFILE_API_URL}/services`);
+  return response.data;
 };

@@ -140,7 +140,7 @@ export function ConfirmationStep() {
             </Text>
             <Text style={{ opacity: 0.8, marginBottom: "8px" }}>
               Клиенты:{" "}
-              {currentProfile.clientCountries
+              {currentProfile.visibleForCountries
                 ?.map((country) => ISO_TO_COUNTRY[country])
                 .join(", ") || "Не указано"}
             </Text>

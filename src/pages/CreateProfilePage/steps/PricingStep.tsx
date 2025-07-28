@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Section, Input, Select, List, Text } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
+import { useProfilesContext } from "@/context/ProfilesContext";
 import { ISO_TO_COUNTRY } from "@/types/profile";
 import { StepLayout } from "@/components/StepLayout";
-import { useProfiles, usePatchProfile } from "@/hooks/useProfiles";
+import { usePatchProfile } from "@/hooks/useProfiles";
 
 // Available time durations
 const TIME_DURATIONS = [
@@ -36,8 +37,11 @@ const COUNTRY_CURRENCIES = {
 export function PricingStep() {
   const { state, updateData, completeStep, saveProgress, setStep } =
     useProfile();
-  const { data: profiles, isLoading: profilesLoading } = useProfiles();
+  const { profiles } = useProfilesContext();
   const patchProfileMutation = usePatchProfile();
+
+  // Get the current draft profile
+  const draftProfile = profiles.data?.find((profile) => profile.isDraft);
 
   // Get user's country to determine available currencies
   const userCountryISO = state.data.location?.country;
@@ -63,15 +67,42 @@ export function PricingStep() {
     }
   );
 
-  // Load pricing data from backend when profiles are loaded
+  // Load pricing data from backend when draft profile is loaded
   useEffect(() => {
-    if (profiles && profiles.length > 0) {
-      const profile = profiles[0]; // Assuming we're working with the first profile
-      if (profile.priceCurrency && profile.pricingSlots) {
+    if (
+      draftProfile &&
+      draftProfile.priceCurrency &&
+      draftProfile.pricingSlots
+    ) {
+      // Convert backend pricing slots to local format
+      const rates: { [key: string]: { incall?: number; outcall?: number } } =
+        {};
+      draftProfile.pricingSlots.forEach(
+        (slot: { slot: string; incall?: number; outcall?: number }) => {
+          rates[slot.slot] = {
+            incall: slot.incall,
+            outcall: slot.outcall,
+          };
+        }
+      );
+
+      setPricing({
+        currency: draftProfile.priceCurrency,
+        rates,
+      });
+    }
+  }, [draftProfile]);
+
+  // Sync ProfileContext state with draft profile data
+  useEffect(() => {
+    if (draftProfile) {
+      const updates: Partial<{ pricing: any }> = {};
+
+      if (draftProfile.priceCurrency && draftProfile.pricingSlots) {
         // Convert backend pricing slots to local format
         const rates: { [key: string]: { incall?: number; outcall?: number } } =
           {};
-        profile.pricingSlots.forEach(
+        draftProfile.pricingSlots.forEach(
           (slot: { slot: string; incall?: number; outcall?: number }) => {
             rates[slot.slot] = {
               incall: slot.incall,
@@ -80,13 +111,23 @@ export function PricingStep() {
           }
         );
 
-        setPricing({
-          currency: profile.priceCurrency,
+        const draftPricing = {
+          currency: draftProfile.priceCurrency,
           rates,
-        });
+        };
+
+        if (
+          JSON.stringify(draftPricing) !== JSON.stringify(state.data.pricing)
+        ) {
+          updates.pricing = draftPricing;
+        }
+      }
+
+      if (Object.keys(updates).length > 0) {
+        updateData(updates);
       }
     }
-  }, [profiles]);
+  }, [draftProfile, state.data.pricing, updateData]);
 
   // Pricing is optional - always valid
   const isValid = true;
@@ -131,9 +172,7 @@ export function PricingStep() {
   };
 
   const handleComplete = async () => {
-    if (isValid && profiles && profiles.length > 0) {
-      const profile = profiles[0];
-
+    if (isValid && draftProfile) {
       // Convert local pricing format to backend format
       const pricingSlots = Object.entries(pricing.rates).map(
         ([slot, rates]) => ({
@@ -146,7 +185,7 @@ export function PricingStep() {
       try {
         // Send update request to backend
         await patchProfileMutation.mutateAsync({
-          id: profile._id,
+          id: draftProfile._id,
           profile: {
             priceCurrency: pricing.currency,
             pricingSlots,
@@ -183,7 +222,7 @@ export function PricingStep() {
     handleSave();
   }, [pricing]);
 
-  if (profilesLoading) {
+  if (profiles.isLoading) {
     return (
       <StepLayout
         currentStep={6}
@@ -203,7 +242,7 @@ export function PricingStep() {
     <StepLayout
       currentStep={6}
       totalSteps={7}
-      isValid={isValid}
+      isValid={isValid && !!draftProfile}
       onPrevious={handlePrevious}
       onNext={handleComplete}
     >
