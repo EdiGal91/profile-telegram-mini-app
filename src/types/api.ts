@@ -18,7 +18,13 @@ export interface ApiProfile {
   clientCountries: string[]; // Legacy field - keeping for backward compatibility
   serviceType: string;
   servicesList: string[];
-  photos: string[]; // URLs to uploaded photos
+  photos: string[]; // URLs to uploaded photos (legacy field for backward compatibility)
+  images: Array<{
+    originalKey: string;
+    blurredKey: string;
+    uuid: string;
+    isMain: boolean;
+  }>; // New field for images with original and blurred versions
   contactInfo: {
     phoneCountryCode?: string;
     phoneNumber?: string;

@@ -65,11 +65,11 @@ export const uploadProfilePhotos = async (
 ): Promise<string[]> => {
   const formData = new FormData();
   photos.forEach((photo) => {
-    formData.append(`photos`, photo);
+    formData.append(`images`, photo);
   });
 
-  const response = await api.post<{ urls: string[] }>(
-    `${PROFILE_API_URL}/${profileId}/photos`,
+  const response = await api.post<string[]>(
+    `${PROFILE_API_URL}/${profileId}/images`,
     formData,
     {
       headers: {
@@ -78,7 +78,7 @@ export const uploadProfilePhotos = async (
     }
   );
 
-  return response.data.urls;
+  return response.data;
 };
 
 // Fetch available services for profiles

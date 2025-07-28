@@ -163,8 +163,9 @@ export const useUploadPhotos = () => {
       profileId: string;
       photos: File[];
     }) => uploadProfilePhotos(profileId, photos),
-    onSuccess: () => {
+    onSuccess: (uploadedImageKeys: string[], variables) => {
       if (telegramId) {
+        // Just invalidate the query to get fresh data with signed URLs
         queryClient.invalidateQueries({
           queryKey: profileKeys.byTelegramId(telegramId),
         });

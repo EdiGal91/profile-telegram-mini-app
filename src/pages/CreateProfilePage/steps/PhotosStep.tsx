@@ -4,16 +4,20 @@ import { Section, Button, List, Cell, Text } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
 import { useProfilesContext } from "@/context/ProfilesContext";
 import { StepLayout } from "@/components/StepLayout";
+import { useUploadPhotos } from "@/hooks/useProfiles";
 
 interface PhotoData {
   url: string;
   file?: File;
   isObjectURL?: boolean;
+  uuid?: string;
+  isMain?: boolean;
 }
 
 export function PhotosStep() {
   const { state, updateData, completeStep, setStep } = useProfile();
   const { profiles } = useProfilesContext();
+  const uploadPhotosMutation = useUploadPhotos();
   const [photos, setPhotos] = useState<PhotoData[]>(() => {
     // Convert existing base64 URLs to photo data format
     return (state.data.photos || []).map((url) => ({
@@ -27,10 +31,13 @@ export function PhotosStep() {
 
   // Sync local state with draft profile data when it becomes available
   useEffect(() => {
-    if (draftProfile?.photos?.length && photos.length === 0) {
-      const draftPhotos = draftProfile.photos.map((url) => ({
-        url,
+    if (draftProfile?.images?.length && photos.length === 0) {
+      // Use originalKey URLs from the images array with uuid and isMain
+      const draftPhotos = draftProfile.images.map((image) => ({
+        url: image.originalKey,
         isObjectURL: false,
+        uuid: image.uuid,
+        isMain: image.isMain,
       }));
       setPhotos(draftPhotos);
     }
@@ -39,10 +46,11 @@ export function PhotosStep() {
   // Sync ProfileContext state with draft profile data
   useEffect(() => {
     if (
-      draftProfile?.photos?.length &&
-      JSON.stringify(draftProfile.photos) !== JSON.stringify(state.data.photos)
+      draftProfile?.images?.length &&
+      JSON.stringify(draftProfile.images.map((img) => img.originalKey)) !==
+        JSON.stringify(state.data.photos)
     ) {
-      updateData({ photos: draftProfile.photos });
+      updateData({ photos: draftProfile.images.map((img) => img.originalKey) });
     }
   }, [draftProfile, state.data.photos, updateData]);
 
@@ -51,38 +59,59 @@ export function PhotosStep() {
 
   const isValid = photos.length >= 1;
   const maxPhotos = 10;
+  const isUploading = uploadPhotosMutation.isPending;
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     try {
       const files = Array.from(event.target.files || []);
 
       if (files.length === 0) return;
 
-      files.forEach((file) => {
-        if (photos.length >= maxPhotos) return;
-        if (!file.type.startsWith("image/")) return;
+      for (const file of files) {
+        if (photos.length >= maxPhotos) break;
+        if (!file.type.startsWith("image/")) continue;
 
-        // const reader = new FileReader();
-        // reader.onload = (e) => {
-        //   const base64 = e.target?.result as string;
-        //   setPhotos((prev) => [
-        //     ...prev,
-        //     {
-        //       url: base64,
-        //       file,
-        //       isObjectURL: false,
-        //     },
-        //   ]);
-        // };
-        // reader.readAsDataURL(file);
-
+        // Create temporary blob URL for immediate preview
         const blobUrl = URL.createObjectURL(file);
         objectURLsRef.current.push(blobUrl);
-        setPhotos((prev) => [
-          ...prev,
-          { url: blobUrl, file, isObjectURL: true },
-        ]);
-      });
+
+        // Add photo to state immediately for preview
+        const newPhoto: PhotoData = {
+          url: blobUrl,
+          file,
+          isObjectURL: true,
+        };
+        setPhotos((prev) => [...prev, newPhoto]);
+
+        // Upload the image immediately
+        if (draftProfile) {
+          try {
+            await uploadPhotosMutation.mutateAsync({
+              profileId: draftProfile._id,
+              photos: [file],
+            });
+            // The profiles will be refreshed automatically via query invalidation
+          } catch (error) {
+            console.error("Failed to upload photo:", error);
+            // Remove the photo from state if upload failed
+            setPhotos((prev) => prev.filter((p) => p.url !== blobUrl));
+            URL.revokeObjectURL(blobUrl);
+            objectURLsRef.current = objectURLsRef.current.filter(
+              (url) => url !== blobUrl
+            );
+
+            // Show error message
+            const telegramWebApp = (window as any).Telegram?.WebApp;
+            if (telegramWebApp?.showAlert) {
+              telegramWebApp.showAlert(
+                "Ошибка при загрузке фотографии. Пожалуйста, попробуйте еще раз."
+              );
+            }
+          }
+        }
+      }
 
       // Clear the input to allow selecting the same file again
       if (event.target) {
@@ -114,7 +143,10 @@ export function PhotosStep() {
 
   const handleNext = () => {
     if (isValid) {
-      updateData({ photos: photos.map((p) => p.url) });
+      // Update local state with all photo URLs
+      const allPhotoUrls = photos.map((photo) => photo.url);
+      updateData({ photos: allPhotoUrls });
+
       completeStep(4);
       setStep(5);
     }
@@ -124,17 +156,6 @@ export function PhotosStep() {
     updateData({ photos: photos.map((p) => p.url) });
     setStep(3);
   };
-
-  // const handleSave = () => {
-  //   updateData({ photos: photos.map((p) => p.url) });
-  //   if (isValid) {
-  //     completeStep(4);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   handleSave();
-  // }, [photos]);
 
   // Cleanup object URLs on unmount
   useEffect(() => {
@@ -152,6 +173,8 @@ export function PhotosStep() {
       isValid={isValid}
       onPrevious={handlePrevious}
       onNext={handleNext}
+      isLoading={isUploading}
+      loadingText="Загрузка фотографий..."
     >
       <List>
         <Section header="Фотографии">
@@ -174,6 +197,7 @@ export function PhotosStep() {
             ref={fileInputRef}
             type="file"
             multiple
+            accept="image/*"
             style={{ display: "none" }}
             onChange={handleFileSelect}
           />
@@ -209,7 +233,7 @@ export function PhotosStep() {
             }}
           >
             {photos.map((photo, index) => (
-              <div key={index} style={{ position: "relative" }}>
+              <div key={photo.uuid || index} style={{ position: "relative" }}>
                 <img
                   src={photo.url}
                   alt={`Photo ${index + 1}`}
@@ -219,12 +243,12 @@ export function PhotosStep() {
                     objectFit: "cover",
                     borderRadius: "8px",
                     border:
-                      index === 0
+                      photo.isMain || index === 0
                         ? "2px solid var(--tg-theme-button-color)"
                         : "1px solid var(--tg-theme-section-bg-color)",
                   }}
                 />
-                {index === 0 && (
+                {(photo.isMain || index === 0) && (
                   <div
                     style={{
                       position: "absolute",
