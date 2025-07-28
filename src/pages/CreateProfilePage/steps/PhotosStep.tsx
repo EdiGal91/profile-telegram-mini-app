@@ -15,7 +15,7 @@ interface PhotoData {
 }
 
 export function PhotosStep() {
-  const { state, updateData, completeStep, setStep } = useProfile();
+  const { updateData, completeStep, setStep } = useProfile();
   const { profiles } = useProfilesContext();
   const uploadPhotosMutation = useUploadPhotos();
   const setImageAsMainMutation = useSetImageAsMain();
