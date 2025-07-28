@@ -4,7 +4,7 @@ import { Section, Button, List, Cell, Text } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
 import { useProfilesContext } from "@/context/ProfilesContext";
 import { StepLayout } from "@/components/StepLayout";
-import { useUploadPhotos } from "@/hooks/useProfiles";
+import { useUploadPhotos, useSetImageAsMain } from "@/hooks/useProfiles";
 
 interface PhotoData {
   url: string;
@@ -18,6 +18,7 @@ export function PhotosStep() {
   const { state, updateData, completeStep, setStep } = useProfile();
   const { profiles } = useProfilesContext();
   const uploadPhotosMutation = useUploadPhotos();
+  const setImageAsMainMutation = useSetImageAsMain();
   const [photos, setPhotos] = useState<PhotoData[]>([]);
   const [pendingUploads, setPendingUploads] = useState<Set<string>>(new Set());
 
@@ -50,7 +51,8 @@ export function PhotosStep() {
 
   const isValid = photos.length >= 1;
   const maxPhotos = 10;
-  const isUploading = uploadPhotosMutation.isPending;
+  const isUploading =
+    uploadPhotosMutation.isPending || setImageAsMainMutation.isPending;
 
   const handleFileSelect = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -146,6 +148,28 @@ export function PhotosStep() {
     });
   };
 
+  const handleSetAsMain = async (photo: PhotoData) => {
+    if (!draftProfile || !photo.uuid || photo.isMain === true) return;
+
+    try {
+      await setImageAsMainMutation.mutateAsync({
+        profileId: draftProfile._id,
+        imageUuid: photo.uuid,
+      });
+      // The profiles will be refreshed automatically via query invalidation
+      // and the useEffect above will update the photos with fresh data
+    } catch (error) {
+      console.error("Failed to set image as main:", error);
+      // Show error message
+      const telegramWebApp = (window as any).Telegram?.WebApp;
+      if (telegramWebApp?.showAlert) {
+        telegramWebApp.showAlert(
+          "Ошибка при установке главной фотографии. Пожалуйста, попробуйте еще раз."
+        );
+      }
+    }
+  };
+
   const handleNext = () => {
     if (isValid) {
       // Update local state with all photo URLs
@@ -184,8 +208,8 @@ export function PhotosStep() {
       <List>
         <Section header="Фотографии">
           <Text style={{ padding: "16px", opacity: 0.7 }}>
-            Добавьте от 1 до {maxPhotos} фотографий. Первая фотография будет
-            основной.
+            Добавьте от 1 до {maxPhotos} фотографий. Нажмите на фотографию,
+            чтобы сделать её главной.
           </Text>
 
           <Text
@@ -252,7 +276,9 @@ export function PhotosStep() {
                         ? "2px solid var(--tg-theme-button-color)"
                         : "1px solid var(--tg-theme-section-bg-color)",
                     opacity: pendingUploads.has(photo.uuid || "") ? 0.6 : 1,
+                    cursor: photo.isMain === true ? "default" : "pointer",
                   }}
+                  onClick={() => handleSetAsMain(photo)}
                 />
                 {pendingUploads.has(photo.uuid || "") && (
                   <div
@@ -291,7 +317,10 @@ export function PhotosStep() {
                 <Button
                   size="s"
                   mode="outline"
-                  onClick={() => removePhoto(index)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent triggering the image click
+                    removePhoto(index);
+                  }}
                   style={{
                     position: "absolute",
                     top: "4px",

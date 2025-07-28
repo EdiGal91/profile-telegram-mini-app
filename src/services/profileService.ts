@@ -81,6 +81,16 @@ export const uploadProfilePhotos = async (
   return response.data;
 };
 
+// Set image as main
+export const setImageAsMain = async (
+  profileId: string,
+  imageUuid: string
+): Promise<void> => {
+  await api.patch(`${PROFILE_API_URL}/${profileId}/images/${imageUuid}`, {
+    isMain: true,
+  });
+};
+
 // Fetch available services for profiles
 export const fetchServices = async () => {
   const response = await api.get(`${PROFILE_API_URL}/services`);

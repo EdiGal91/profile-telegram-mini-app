@@ -8,6 +8,7 @@ import {
   patchProfile,
   deleteProfile,
   uploadProfilePhotos,
+  setImageAsMain,
   fetchServices,
 } from "@/services/profileService";
 import { ApiProfile } from "@/types/api";
@@ -166,6 +167,30 @@ export const useUploadPhotos = () => {
     onSuccess: (uploadedImageKeys: string[], variables) => {
       if (telegramId) {
         // Just invalidate the query to get fresh data with signed URLs
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.byTelegramId(telegramId),
+        });
+      }
+    },
+  });
+};
+
+// Hook to set image as main
+export const useSetImageAsMain = () => {
+  const queryClient = useQueryClient();
+  const telegramId = useTelegramId();
+
+  return useMutation({
+    mutationFn: ({
+      profileId,
+      imageUuid,
+    }: {
+      profileId: string;
+      imageUuid: string;
+    }) => setImageAsMain(profileId, imageUuid),
+    onSuccess: () => {
+      if (telegramId) {
+        // Invalidate the query to get fresh data from server
         queryClient.invalidateQueries({
           queryKey: profileKeys.byTelegramId(telegramId),
         });
