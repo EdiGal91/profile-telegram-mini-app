@@ -1,5 +1,5 @@
 // src/pages/CreateProfilePage/steps/PhotosStep.tsx
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Section, Button, List, Cell, Text } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
 import { useProfilesContext } from "@/context/ProfilesContext";
@@ -18,41 +18,32 @@ export function PhotosStep() {
   const { state, updateData, completeStep, setStep } = useProfile();
   const { profiles } = useProfilesContext();
   const uploadPhotosMutation = useUploadPhotos();
-  const [photos, setPhotos] = useState<PhotoData[]>(() => {
-    // Convert existing base64 URLs to photo data format
-    return (state.data.photos || []).map((url) => ({
-      url,
-      isObjectURL: false,
-    }));
-  });
+  const [photos, setPhotos] = useState<PhotoData[]>([]);
+  const [pendingUploads, setPendingUploads] = useState<Set<string>>(new Set());
 
   // Get the current draft profile
   const draftProfile = profiles.data?.find((profile) => profile.isDraft);
 
+  // Memoize the images array to prevent unnecessary re-renders
+  const draftImages = useMemo(() => {
+    if (!draftProfile?.images?.length) return null;
+    return draftProfile.images.map((image) => ({
+      url: image.originalKey,
+      isObjectURL: false,
+      uuid: image.uuid,
+      isMain: image.isMain,
+    }));
+  }, [draftProfile?.images]);
+
   // Sync local state with draft profile data when it becomes available
   useEffect(() => {
-    if (draftProfile?.images?.length && photos.length === 0) {
-      // Use originalKey URLs from the images array with uuid and isMain
-      const draftPhotos = draftProfile.images.map((image) => ({
-        url: image.originalKey,
-        isObjectURL: false,
-        uuid: image.uuid,
-        isMain: image.isMain,
-      }));
-      setPhotos(draftPhotos);
+    if (draftImages) {
+      setPhotos(draftImages);
+    } else {
+      // If no images in draft profile, start with empty array
+      setPhotos([]);
     }
-  }, [draftProfile, photos]);
-
-  // Sync ProfileContext state with draft profile data
-  useEffect(() => {
-    if (
-      draftProfile?.images?.length &&
-      JSON.stringify(draftProfile.images.map((img) => img.originalKey)) !==
-        JSON.stringify(state.data.photos)
-    ) {
-      updateData({ photos: draftProfile.images.map((img) => img.originalKey) });
-    }
-  }, [draftProfile, state.data.photos, updateData]);
+  }, [draftImages]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const objectURLsRef = useRef<string[]>([]);
@@ -77,13 +68,16 @@ export function PhotosStep() {
         const blobUrl = URL.createObjectURL(file);
         objectURLsRef.current.push(blobUrl);
 
-        // Add photo to state immediately for preview
+        // Add photo to state immediately for preview with a temporary ID
+        const tempId = `temp-${Date.now()}-${Math.random()}`;
         const newPhoto: PhotoData = {
           url: blobUrl,
           file,
           isObjectURL: true,
+          uuid: tempId, // Temporary ID for React key
         };
         setPhotos((prev) => [...prev, newPhoto]);
+        setPendingUploads((prev) => new Set(prev).add(tempId));
 
         // Upload the image immediately
         if (draftProfile) {
@@ -93,14 +87,25 @@ export function PhotosStep() {
               photos: [file],
             });
             // The profiles will be refreshed automatically via query invalidation
+            // and the useEffect above will update the photos with fresh data
+            setPendingUploads((prev) => {
+              const newSet = new Set(prev);
+              newSet.delete(tempId);
+              return newSet;
+            });
           } catch (error) {
             console.error("Failed to upload photo:", error);
             // Remove the photo from state if upload failed
-            setPhotos((prev) => prev.filter((p) => p.url !== blobUrl));
+            setPhotos((prev) => prev.filter((p) => p.uuid !== tempId));
             URL.revokeObjectURL(blobUrl);
             objectURLsRef.current = objectURLsRef.current.filter(
               (url) => url !== blobUrl
             );
+            setPendingUploads((prev) => {
+              const newSet = new Set(prev);
+              newSet.delete(tempId);
+              return newSet;
+            });
 
             // Show error message
             const telegramWebApp = (window as any).Telegram?.WebApp;
@@ -214,7 +219,7 @@ export function PhotosStep() {
               setPhotos((prev) => [
                 ...prev,
                 {
-                  url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23ff6b6b'/%3E%3Ctext x='50' y='50' text-anchor='middle' dy='0.3em' fill='white'%3EТест%3C/text%3E%3C/svg%3E",
+                  url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23ff6b6b'%3E%3Ctext x='50' y='50' text-anchor='middle' dy='0.3em' fill='white'%3EТест%3C/text%3E%3C/svg%3E",
                   isObjectURL: false,
                 },
               ]);
@@ -246,8 +251,26 @@ export function PhotosStep() {
                       photo.isMain || index === 0
                         ? "2px solid var(--tg-theme-button-color)"
                         : "1px solid var(--tg-theme-section-bg-color)",
+                    opacity: pendingUploads.has(photo.uuid || "") ? 0.6 : 1,
                   }}
                 />
+                {pendingUploads.has(photo.uuid || "") && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      transform: "translate(-50%, -50%)",
+                      background: "rgba(0,0,0,0.7)",
+                      color: "white",
+                      padding: "4px 8px",
+                      borderRadius: "4px",
+                      fontSize: "12px",
+                    }}
+                  >
+                    Загрузка...
+                  </div>
+                )}
                 {(photo.isMain || index === 0) && (
                   <div
                     style={{
