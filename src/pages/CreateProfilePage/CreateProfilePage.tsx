@@ -103,6 +103,11 @@ function DraftProfileInitializer() {
 function CreateProfileContent() {
   const { state } = useProfile();
 
+  // Scroll to top whenever step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [state.currentStep]);
+
   const renderCurrentStep = () => {
     switch (state.currentStep) {
       case 1:
