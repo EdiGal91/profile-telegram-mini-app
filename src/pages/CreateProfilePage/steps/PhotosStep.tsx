@@ -258,7 +258,8 @@ export function PhotosStep() {
           <input
             ref={fileInputRef}
             type="file"
-            multiple
+            // Android bug: if the element has both accept="image/*" and the multiple attributes, WebView never fires the change event
+            // multiple
             accept="image/*"
             style={{ display: "none" }}
             onChange={handleFileSelect}
