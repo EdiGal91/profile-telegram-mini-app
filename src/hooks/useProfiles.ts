@@ -9,6 +9,7 @@ import {
   deleteProfile,
   uploadProfilePhotos,
   setImageAsMain,
+  deleteProfileImage,
   fetchServices,
 } from "@/services/profileService";
 import { ApiProfile } from "@/types/api";
@@ -191,6 +192,30 @@ export const useSetImageAsMain = () => {
       profileId: string;
       imageUuid: string;
     }) => setImageAsMain(profileId, imageUuid),
+    onSuccess: () => {
+      if (telegramId) {
+        // Invalidate the query to get fresh data from server
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.byTelegramId(telegramId),
+        });
+      }
+    },
+  });
+};
+
+// Hook to delete a profile image
+export const useDeleteImage = () => {
+  const queryClient = useQueryClient();
+  const telegramId = useTelegramId();
+
+  return useMutation({
+    mutationFn: ({
+      profileId,
+      imageUuid,
+    }: {
+      profileId: string;
+      imageUuid: string;
+    }) => deleteProfileImage(profileId, imageUuid),
     onSuccess: () => {
       if (telegramId) {
         // Invalidate the query to get fresh data from server

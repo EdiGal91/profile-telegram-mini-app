@@ -4,7 +4,11 @@ import { Section, Button, List, Cell, Text } from "@telegram-apps/telegram-ui";
 import { useProfile } from "@/context/ProfileContext";
 import { useProfilesContext } from "@/context/ProfilesContext";
 import { StepLayout } from "@/components/StepLayout";
-import { useUploadPhotos, useSetImageAsMain } from "@/hooks/useProfiles";
+import {
+  useUploadPhotos,
+  useSetImageAsMain,
+  useDeleteImage,
+} from "@/hooks/useProfiles";
 
 interface PhotoData {
   url: string;
@@ -19,6 +23,7 @@ export function PhotosStep() {
   const { profiles } = useProfilesContext();
   const uploadPhotosMutation = useUploadPhotos();
   const setImageAsMainMutation = useSetImageAsMain();
+  const deleteImageMutation = useDeleteImage();
   const [photos, setPhotos] = useState<PhotoData[]>([]);
   const [pendingUploads, setPendingUploads] = useState<Set<string>>(new Set());
 
@@ -52,7 +57,9 @@ export function PhotosStep() {
   const isValid = photos.length >= 1;
   const maxPhotos = 10;
   const isUploading =
-    uploadPhotosMutation.isPending || setImageAsMainMutation.isPending;
+    uploadPhotosMutation.isPending ||
+    setImageAsMainMutation.isPending ||
+    deleteImageMutation.isPending;
 
   const handleFileSelect = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -135,17 +142,43 @@ export function PhotosStep() {
     }
   };
 
-  const removePhoto = (index: number) => {
-    setPhotos((prev) => {
-      const photoToRemove = prev[index];
-      if (photoToRemove.isObjectURL && photoToRemove.url) {
-        URL.revokeObjectURL(photoToRemove.url);
-        objectURLsRef.current = objectURLsRef.current.filter(
-          (url) => url !== photoToRemove.url
-        );
+  const removePhoto = async (index: number) => {
+    const photoToRemove = photos[index];
+
+    // If it's a temporary image (not yet uploaded to server), just remove from local state
+    if (photoToRemove.isObjectURL) {
+      setPhotos((prev) => {
+        if (photoToRemove.url) {
+          URL.revokeObjectURL(photoToRemove.url);
+          objectURLsRef.current = objectURLsRef.current.filter(
+            (url) => url !== photoToRemove.url
+          );
+        }
+        return prev.filter((_, i) => i !== index);
+      });
+      return;
+    }
+
+    // If it's a server-side image, make DELETE request
+    if (photoToRemove.uuid && draftProfile) {
+      try {
+        await deleteImageMutation.mutateAsync({
+          profileId: draftProfile._id,
+          imageUuid: photoToRemove.uuid,
+        });
+        // The profiles will be refreshed automatically via query invalidation
+        // and the useEffect above will update the photos with fresh data
+      } catch (error) {
+        console.error("Failed to delete image:", error);
+        // Show error message
+        const telegramWebApp = (window as any).Telegram?.WebApp;
+        if (telegramWebApp?.showAlert) {
+          telegramWebApp.showAlert(
+            "Ошибка при удалении фотографии. Пожалуйста, попробуйте еще раз."
+          );
+        }
       }
-      return prev.filter((_, i) => i !== index);
-    });
+    }
   };
 
   const handleSetAsMain = async (photo: PhotoData) => {

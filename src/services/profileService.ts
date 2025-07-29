@@ -91,6 +91,14 @@ export const setImageAsMain = async (
   });
 };
 
+// Delete a profile image
+export const deleteProfileImage = async (
+  profileId: string,
+  imageUuid: string
+): Promise<void> => {
+  await api.delete(`${PROFILE_API_URL}/${profileId}/images/${imageUuid}`);
+};
+
 // Fetch available services for profiles
 export const fetchServices = async () => {
   const response = await api.get(`${PROFILE_API_URL}/services`);
