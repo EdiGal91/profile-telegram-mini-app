@@ -55,6 +55,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   };
 
   const updateData = (data: Partial<ProfileData>) => {
+    console.log("updateData", data);
     dispatch({ type: "SET_DATA", data });
   };
 

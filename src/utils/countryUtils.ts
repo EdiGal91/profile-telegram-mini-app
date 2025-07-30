@@ -1,5 +1,3 @@
-import { COUNTRY_TO_ISO } from "@/types/profile";
-
 // Country names in different languages
 export const COUNTRY_NAMES: Record<string, Record<string, string>> = {
   ru: {
@@ -60,6 +58,64 @@ export const COUNTRY_NAMES: Record<string, Record<string, string>> = {
     CH: "Switzerland",
     SE: "Sweden",
   },
+  ka: {
+    RU: "რუსეთი",
+    TR: "თურქეთი",
+    AM: "სომხეთი",
+    IL: "ისრაელი",
+    AZ: "აზერბაიჯანი",
+    KZ: "ყაზახეთი",
+    BY: "ბელარუსი",
+    UA: "უკრაინა",
+    IN: "ინდოეთი",
+    GE: "საქართველო",
+    MD: "მოლდოვა",
+    US: "აშშ",
+    DE: "გერმანია",
+    PL: "პოლონეთი",
+    GB: "გაერთიანებული სამეფო",
+    FR: "საფრანგეთი",
+    GR: "საბერძნეთი",
+    IT: "იტალია",
+    NL: "ნიდერლანდები",
+    ES: "ესპანეთი",
+    LT: "ლიტვა",
+    LV: "ლატვია",
+    EE: "ესტონეთი",
+    PT: "პორტუგალია",
+    IE: "ირლანდია",
+    CH: "შვეიცარია",
+    SE: "შვედეთი",
+  },
+  tr: {
+    RU: "Rusya",
+    TR: "Türkiye",
+    AM: "Ermenistan",
+    IL: "İsrail",
+    AZ: "Azerbaycan",
+    KZ: "Kazakistan",
+    BY: "Belarus",
+    UA: "Ukrayna",
+    IN: "Hindistan",
+    GE: "Gürcistan",
+    MD: "Moldova",
+    US: "Amerika Birleşik Devletleri",
+    DE: "Almanya",
+    PL: "Polonya",
+    GB: "Birleşik Krallık",
+    FR: "Fransa",
+    GR: "Yunanistan",
+    IT: "İtalya",
+    NL: "Hollanda",
+    ES: "İspanya",
+    LT: "Litvanya",
+    LV: "Letonya",
+    EE: "Estonya",
+    PT: "Portekiz",
+    IE: "İrlanda",
+    CH: "İsviçre",
+    SE: "İsveç",
+  },
   // Add more languages as needed
 };
 
@@ -69,18 +125,15 @@ export const getCurrentLanguage = (): string => {
   return "ru";
 };
 
-// Get country name in current language
-export const getCountryName = (isoCode: string, language?: string): string => {
-  const lang = language || getCurrentLanguage();
-  return COUNTRY_NAMES[lang]?.[isoCode] || isoCode;
-};
-
-// Get country name in specific language
-export const getCountryNameInLanguage = (
-  isoCode: string,
-  language: string
-): string => {
-  return COUNTRY_NAMES[language]?.[isoCode] || isoCode;
+// Get localized "All countries" text
+export const getAllCountriesText = (language: string): string => {
+  const allCountriesText: Record<string, string> = {
+    ru: "Все страны",
+    en: "All countries",
+    ka: "ყველა ქვეყანა",
+    tr: "Tüm ülkeler",
+  };
+  return allCountriesText[language] || allCountriesText.en;
 };
 
 // Get all countries for a specific language
@@ -106,53 +159,4 @@ export const getEscortLocationCountries = (
   return allCountries.filter((country) =>
     escortCountryIsos.includes(country.iso)
   );
-};
-
-// Convert ISO codes to country names
-export const convertIsoToCountryNames = (
-  isoCodes: string[],
-  language?: string
-): string[] => {
-  return isoCodes.map((iso) => getCountryName(iso, language));
-};
-
-// Convert country names to ISO codes (for backward compatibility)
-export const convertCountryNamesToIso = (countryNames: string[]): string[] => {
-  return countryNames.map((country) => COUNTRY_TO_ISO[country]).filter(Boolean);
-};
-
-// Test function to validate the new system
-export const validateCountryMappings = () => {
-  console.log("Testing new country system...");
-
-  // Test the specific case from the user's request
-  const userCountryIso = "GE";
-  const userCity = "Тbilisi";
-  const visibleCountriesIso = ["IL", "PT"];
-
-  console.log("\nUser's specific case (new system):");
-  console.log(
-    `Country ISO: ${userCountryIso} -> ${getCountryName(userCountryIso)}`
-  );
-  console.log(`City: ${userCity}`);
-  console.log(
-    `Visible for countries: ${visibleCountriesIso
-      .map((iso) => `${iso} (${getCountryName(iso)})`)
-      .join(", ")}`
-  );
-
-  const expectedPayload = {
-    country: userCountryIso,
-    city: userCity,
-    visibleForCountries: visibleCountriesIso,
-  };
-
-  console.log("Expected backend payload:", expectedPayload);
-
-  // Test multiple languages
-  console.log("\nTesting multiple languages:");
-  console.log(`GE in Russian: ${getCountryNameInLanguage("GE", "ru")}`);
-  console.log(`GE in English: ${getCountryNameInLanguage("GE", "en")}`);
-  console.log(`IL in Russian: ${getCountryNameInLanguage("IL", "ru")}`);
-  console.log(`IL in English: ${getCountryNameInLanguage("IL", "en")}`);
 };

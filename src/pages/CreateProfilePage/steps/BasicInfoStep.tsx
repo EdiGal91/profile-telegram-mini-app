@@ -59,7 +59,10 @@ export function BasicInfoStep() {
         setIsLoading(true);
 
         // Update local state first
-        updateData({ name: name.trim(), description: description.trim() });
+        updateData({
+          name: name.trim(),
+          description: description.trim(),
+        });
 
         // Send PATCH request to update the profile
         await patchProfile.mutateAsync({
@@ -83,7 +86,10 @@ export function BasicInfoStep() {
   };
 
   const handleSave = () => {
-    updateData({ name: name.trim(), description: description.trim() });
+    updateData({
+      name: name.trim(),
+      description: description.trim(),
+    });
     if (isValid) {
       completeStep(1);
     }

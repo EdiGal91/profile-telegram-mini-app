@@ -7,13 +7,14 @@ export interface ApiProfile {
   isDraft: boolean;
   name: string;
   description: string;
+  languageCode: string; // Language code: 'en', 'ru', 'ka', or 'tr'
   // Support both nested and flat location formats
   location?: {
     country: string; // ISO 3166-1 alpha-2 code (e.g., "GE", "IL")
-    city: string;
+    city: string; // Normalized city value (e.g., "tbilisi", "jerusalem")
   };
   country?: string; // ISO 3166-1 alpha-2 code (flat format)
-  city?: string; // Flat format
+  city?: string; // Normalized city value (flat format)
   visibleForCountries: string[]; // Array of ISO 3166-1 alpha-2 codes
   clientCountries: string[]; // Legacy field - keeping for backward compatibility
   serviceType: string;

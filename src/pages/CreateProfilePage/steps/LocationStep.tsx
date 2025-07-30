@@ -13,9 +13,14 @@ import { usePatchProfile } from "@/hooks/useProfiles";
 import {
   getCountriesForLanguage,
   getEscortLocationCountries,
-  validateCountryMappings,
+  getAllCountriesText,
 } from "@/utils/countryUtils";
-import { getCitiesForCountry } from "@/utils/cityUtils";
+import {
+  getCitiesForCountry,
+  getCityNamesForLanguage,
+  getNormalizedCityValue,
+  getCityDisplayName,
+} from "@/utils/cityUtils";
 import { StepLayout } from "@/components/StepLayout";
 
 const ALL_COUNTRIES_CODE = "ALL";
@@ -37,10 +42,9 @@ export function LocationStep() {
   const initDataState = useSignal(initData.state);
   const draftProfile = profiles.data?.find((profile) => profile.isDraft);
 
-  // Debug mappings in dev
-  useEffect(() => {
-    if (import.meta.env.DEV) validateCountryMappings();
-  }, []);
+  // Get language code from profile state
+  console.log("state.data", state.data);
+  const languageCode = state.data.languageCode || "ru";
 
   // Sync draft data
   useEffect(() => {
@@ -96,6 +100,12 @@ export function LocationStep() {
         city: draftProfile.location.city,
       };
     }
+    if (
+      draftProfile.languageCode &&
+      draftProfile.languageCode !== state.data.languageCode
+    ) {
+      updates.languageCode = draftProfile.languageCode;
+    }
     const countriesFromBackend =
       draftProfile.visibleForCountries || draftProfile.clientCountries || [];
     if (
@@ -133,6 +143,15 @@ export function LocationStep() {
   const handleCountryChange = (countryIso: string) => {
     setUserCountryIso(countryIso);
     setUserCity("");
+  };
+
+  const handleCityChange = (cityDisplayName: string) => {
+    const normalizedValue = getNormalizedCityValue(
+      userCountryIso,
+      cityDisplayName,
+      languageCode
+    );
+    setUserCity(normalizedValue);
   };
 
   const handleClientCountryToggle = (iso: string) => {
@@ -175,14 +194,20 @@ export function LocationStep() {
     setStep(nextStep);
   };
 
-  const escortCountries = getEscortLocationCountries();
+  const escortCountries = getEscortLocationCountries(languageCode);
   const allCountries = [
-    { iso: ALL_COUNTRIES_CODE, name: "Все страны" },
-    ...getCountriesForLanguage(),
+    { iso: ALL_COUNTRIES_CODE, name: getAllCountriesText(languageCode) },
+    ...getCountriesForLanguage(languageCode),
   ];
   const availableCities = userCountryIso
-    ? getCitiesForCountry(userCountryIso)
+    ? getCityNamesForLanguage(userCountryIso, languageCode)
     : [];
+
+  // Get the current city display name for the selected language
+  const currentCityDisplayName =
+    userCity && userCountryIso
+      ? getCityDisplayName(userCountryIso, userCity, languageCode)
+      : "";
 
   const isAllSelected = clientCountriesIso.includes(ALL_COUNTRIES_CODE);
 
@@ -214,15 +239,15 @@ export function LocationStep() {
           {userCountryIso && (
             <Select
               header="Ваш город"
-              value={userCity}
-              onChange={(e) => setUserCity(e.target.value)}
+              value={currentCityDisplayName}
+              onChange={(e) => handleCityChange(e.target.value)}
             >
               <option value="" disabled>
                 Выберите город
               </option>
-              {availableCities.map((city) => (
-                <option key={city} value={city}>
-                  {city}
+              {availableCities.map((cityName) => (
+                <option key={cityName} value={cityName}>
+                  {cityName}
                 </option>
               ))}
             </Select>
