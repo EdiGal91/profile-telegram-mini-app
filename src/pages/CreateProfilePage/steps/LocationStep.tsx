@@ -16,7 +16,6 @@ import {
   getAllCountriesText,
 } from "@/utils/countryUtils";
 import {
-  getCitiesForCountry,
   getCityNamesForLanguage,
   getNormalizedCityValue,
   getCityDisplayName,
