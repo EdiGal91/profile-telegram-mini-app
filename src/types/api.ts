@@ -76,3 +76,21 @@ export interface ServiceCategory {
 export interface ServicesResponse {
   [key: string]: ServiceCategory;
 }
+
+// Location API types for /telegram/profiles/locations
+export interface LocationCity {
+  normalized: string;
+  names: Record<string, string>;
+}
+
+export interface LocationCountry {
+  iso: string;
+  names: Record<string, string>;
+  forEscort: boolean;
+  forClient: boolean;
+  cities?: LocationCity[];
+}
+
+export interface LocationsResponse {
+  countries: LocationCountry[];
+}

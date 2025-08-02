@@ -10,16 +10,7 @@ import { useSignal, initData } from "@telegram-apps/sdk-react";
 import { useProfile } from "@/context/ProfileContext";
 import { useProfilesContext } from "@/context/ProfilesContext";
 import { usePatchProfile } from "@/hooks/useProfiles";
-import {
-  getCountriesForLanguage,
-  getEscortLocationCountries,
-  getAllCountriesText,
-} from "@/utils/countryUtils";
-import {
-  getCityNamesForLanguage,
-  getNormalizedCityValue,
-  getCityDisplayName,
-} from "@/utils/cityUtils";
+import { useLocations } from "@/hooks/useLocations";
 import { StepLayout } from "@/components/StepLayout";
 
 const ALL_COUNTRIES_CODE = "ALL";
@@ -144,6 +135,65 @@ export function LocationStep() {
     setUserCity("");
   };
 
+  const {
+    loading: locationsLoading,
+    error: locationsError,
+    getCountriesForEscort,
+    getCountriesForClient,
+    getCitiesForCountry,
+  } = useLocations();
+
+  // Replace escortCountries and allCountries with data from the hook
+  const escortCountries = getCountriesForEscort().map((country) => ({
+    iso: country.iso,
+    name: country.names[languageCode] || country.names["en"] || country.iso,
+  }));
+
+  const allCountries = [
+    ...getCountriesForClient().map((country) => ({
+      iso: country.iso,
+      name: country.names[languageCode] || country.names["en"] || country.iso,
+    })),
+  ];
+
+  // Replace availableCities and city display logic
+  const availableCities = userCountryIso
+    ? getCitiesForCountry(userCountryIso).map(
+        (city) =>
+          city.names[languageCode] || city.names["en"] || city.normalized
+      )
+    : [];
+
+  // Map normalized city value to display name and vice versa
+  const getCityDisplayName = (
+    countryIso: string,
+    normalized: string,
+    lang: string
+  ) => {
+    const city = getCitiesForCountry(countryIso).find(
+      (c) => c.normalized === normalized
+    );
+    return city
+      ? city.names[lang] || city.names["en"] || city.normalized
+      : normalized;
+  };
+  const getNormalizedCityValue = (
+    countryIso: string,
+    displayName: string,
+    lang: string
+  ) => {
+    const city = getCitiesForCountry(countryIso).find(
+      (c) => c.names[lang] === displayName || c.names["en"] === displayName
+    );
+    return city ? city.normalized : displayName;
+  };
+
+  const currentCityDisplayName =
+    userCity && userCountryIso
+      ? getCityDisplayName(userCountryIso, userCity, languageCode)
+      : "";
+
+  // Update handleCityChange to use new normalization
   const handleCityChange = (cityDisplayName: string) => {
     const normalizedValue = getNormalizedCityValue(
       userCountryIso,
@@ -193,20 +243,9 @@ export function LocationStep() {
     setStep(nextStep);
   };
 
-  const escortCountries = getEscortLocationCountries(languageCode);
-  const allCountries = [
-    { iso: ALL_COUNTRIES_CODE, name: getAllCountriesText(languageCode) },
-    ...getCountriesForLanguage(languageCode),
-  ];
-  const availableCities = userCountryIso
-    ? getCityNamesForLanguage(userCountryIso, languageCode)
-    : [];
-
-  // Get the current city display name for the selected language
-  const currentCityDisplayName =
-    userCity && userCountryIso
-      ? getCityDisplayName(userCountryIso, userCity, languageCode)
-      : "";
+  // Loading and error states for locations
+  if (locationsLoading) return <div>Загрузка локаций...</div>;
+  if (locationsError) return <div>Ошибка загрузки локаций</div>;
 
   const isAllSelected = clientCountriesIso.includes(ALL_COUNTRIES_CODE);
 
